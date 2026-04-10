@@ -1,0 +1,10 @@
+backend/logs/*.log
+backend/logs/*.sql
+uploads/*
+!uploads/.gitkeep
+!uploads/.htaccess
+*.bak
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,289 @@
+CREATE DATABASE IF NOT EXISTS project_submission_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE project_submission_db;
+
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS account_activation_tokens;
+DROP TABLE IF EXISTS password_reset_tokens;
+DROP TABLE IF EXISTS audit_logs;
+DROP TABLE IF EXISTS notifications;
+DROP TABLE IF EXISTS reactivation_requests;
+DROP TABLE IF EXISTS submission_members;
+DROP TABLE IF EXISTS submissions;
+DROP TABLE IF EXISTS team_members;
+DROP TABLE IF EXISTS teams;
+DROP TABLE IF EXISTS section_subjects;
+DROP TABLE IF EXISTS subjects;
+DROP TABLE IF EXISTS students;
+DROP TABLE IF EXISTS sections;
+DROP TABLE IF EXISTS semesters;
+DROP TABLE IF EXISTS school_years;
+DROP TABLE IF EXISTS teachers;
+DROP TABLE IF EXISTS admins;
+SET FOREIGN_KEY_CHECKS = 1;
+
+CREATE TABLE admins (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    full_name VARCHAR(150) NOT NULL,
+    username VARCHAR(100) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    role ENUM('super_admin', 'admin') NOT NULL DEFAULT 'admin',
+    status ENUM('active', 'inactive', 'archived') NOT NULL DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE teachers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    teacher_id VARCHAR(50) NOT NULL UNIQUE,
+    full_name VARCHAR(150) NOT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    username VARCHAR(100) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    status ENUM('active', 'inactive', 'archived') NOT NULL DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE school_years (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    label VARCHAR(20) NOT NULL UNIQUE,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE semesters (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    school_year_id INT NOT NULL,
+    name VARCHAR(50) NOT NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_semesters_school_year FOREIGN KEY (school_year_id) REFERENCES school_years(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    UNIQUE KEY uniq_semester (school_year_id, name)
+);
+
+CREATE TABLE sections (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    section_name VARCHAR(100) NOT NULL,
+    school_year_id INT NOT NULL,
+    semester_id INT NOT NULL,
+    status ENUM('active', 'inactive') NOT NULL DEFAULT 'active',
+    notes TEXT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_sections_school_year FOREIGN KEY (school_year_id) REFERENCES school_years(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_sections_semester FOREIGN KEY (semester_id) REFERENCES semesters(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    UNIQUE KEY uniq_section_year_sem (section_name, school_year_id, semester_id)
+);
+
+CREATE TABLE students (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id VARCHAR(50) NOT NULL UNIQUE,
+    full_name VARCHAR(150) NOT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    username VARCHAR(100) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    section_id INT NOT NULL,
+    account_status ENUM('pending', 'active', 'view_only', 'inactive', 'archived') NOT NULL DEFAULT 'pending',
+    can_submit TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_students_section FOREIGN KEY (section_id) REFERENCES sections(id) ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE subjects (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    subject_code VARCHAR(50) NOT NULL,
+    subject_name VARCHAR(150) NOT NULL,
+    description TEXT NULL,
+    teacher_id INT NOT NULL,
+    school_year_id INT NOT NULL,
+    semester_id INT NOT NULL,
+    status ENUM('active', 'inactive') NOT NULL DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_subjects_teacher FOREIGN KEY (teacher_id) REFERENCES teachers(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_subjects_school_year FOREIGN KEY (school_year_id) REFERENCES school_years(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_subjects_semester FOREIGN KEY (semester_id) REFERENCES semesters(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    UNIQUE KEY uniq_subject_term_teacher (subject_code, teacher_id, school_year_id, semester_id)
+);
+
+CREATE TABLE section_subjects (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    section_id INT NOT NULL,
+    subject_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_section_subjects_section FOREIGN KEY (section_id) REFERENCES sections(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_section_subjects_subject FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    UNIQUE KEY uniq_section_subject (section_id, subject_id)
+);
+
+
+CREATE TABLE teams (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    subject_id INT NOT NULL,
+    section_id INT NOT NULL,
+    leader_student_id INT NOT NULL,
+    team_name VARCHAR(150) NOT NULL,
+    status ENUM('active', 'inactive', 'archived') NOT NULL DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_teams_subject FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_teams_section FOREIGN KEY (section_id) REFERENCES sections(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_teams_leader FOREIGN KEY (leader_student_id) REFERENCES students(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    UNIQUE KEY uniq_leader_subject_team (leader_student_id, subject_id)
+);
+
+CREATE TABLE team_members (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    team_id INT NOT NULL,
+    student_id INT NOT NULL,
+    role ENUM('leader', 'member') NOT NULL DEFAULT 'member',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_team_members_team FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_team_members_student FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    UNIQUE KEY uniq_team_member (team_id, student_id)
+);
+
+CREATE TABLE submissions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    team_id INT NOT NULL,
+    student_id INT NOT NULL,
+    submitted_by_student_id INT NULL,
+    section_id INT NOT NULL,
+    subject_id INT NOT NULL,
+    assigned_system VARCHAR(255) NOT NULL,
+    company_name VARCHAR(255) NOT NULL,
+    project_url TEXT NOT NULL,
+    video_url TEXT NOT NULL,
+    admin_username VARCHAR(100) NULL,
+    admin_password VARCHAR(255) NULL,
+    user_username VARCHAR(100) NULL,
+    user_password VARCHAR(255) NULL,
+    contact_email VARCHAR(150) NOT NULL,
+    attachment_path VARCHAR(255) NULL,
+    status ENUM('pending', 'reviewed', 'graded', 'archived') NOT NULL DEFAULT 'pending',
+    grade VARCHAR(50) NULL,
+    teacher_feedback TEXT NULL,
+    review_notes TEXT NULL,
+    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_submissions_team FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_submissions_student FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_submissions_submitted_by FOREIGN KEY (submitted_by_student_id) REFERENCES students(id) ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT fk_submissions_section FOREIGN KEY (section_id) REFERENCES sections(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_submissions_subject FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    UNIQUE KEY uniq_team_subject (team_id, subject_id)
+);
+
+CREATE TABLE submission_members (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    submission_id INT NOT NULL,
+    member_name VARCHAR(150) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_submission_members_submission FOREIGN KEY (submission_id) REFERENCES submissions(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE TABLE reactivation_requests (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL,
+    current_section_id INT NOT NULL,
+    requested_section_id INT NULL,
+    reason TEXT NOT NULL,
+    status ENUM('pending', 'approved', 'denied') NOT NULL DEFAULT 'pending',
+    admin_note TEXT NULL,
+    reviewed_by INT NULL,
+    reviewed_at TIMESTAMP NULL DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_reactivation_student FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_reactivation_current_section FOREIGN KEY (current_section_id) REFERENCES sections(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_reactivation_requested_section FOREIGN KEY (requested_section_id) REFERENCES sections(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_reactivation_reviewed_by FOREIGN KEY (reviewed_by) REFERENCES admins(id) ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+CREATE TABLE notifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_type ENUM('admin', 'teacher', 'student') NOT NULL,
+    user_id INT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    type ENUM('info', 'success', 'warning') NOT NULL DEFAULT 'info',
+    is_read TINYINT(1) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_notifications_user (user_type, user_id),
+    INDEX idx_notifications_read (is_read)
+);
+
+CREATE TABLE password_reset_tokens (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_type ENUM('teacher', 'student') NOT NULL,
+    user_id INT NOT NULL,
+    token VARCHAR(128) NOT NULL UNIQUE,
+    expires_at DATETIME NOT NULL,
+    used_at DATETIME NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE account_activation_tokens (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL,
+    token VARCHAR(128) NOT NULL UNIQUE,
+    expires_at DATETIME NOT NULL,
+    used_at DATETIME NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_activation_student FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE TABLE audit_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    actor_type ENUM('admin', 'teacher', 'student') NOT NULL,
+    actor_id INT NOT NULL,
+    action VARCHAR(100) NOT NULL,
+    target_type VARCHAR(100) NOT NULL,
+    target_id INT NOT NULL,
+    description TEXT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO school_years (label, is_active) VALUES ('2025-2026', 1);
+INSERT INTO semesters (school_year_id, name, is_active) VALUES (1, '1st Semester', 1), (1, '2nd Semester', 0);
+INSERT INTO admins (full_name, username, password_hash, role, status) VALUES
+('Main Admin', 'admin', '$2y$12$oV5xYO4.0PGbc.mPuIpMDuZOjr0kaBLfe/aEnaZV.UamYhpkXAyqC', 'super_admin', 'active');
+INSERT INTO teachers (teacher_id, full_name, email, username, password_hash, status) VALUES
+('T-001', 'Teacher One', 'teacher1@example.com', 'teacher1', '$2y$12$XPo/qSaTKIxVIejTHc1Yn.XacZYkzAZ3Ju5k3quDoXYTLD0hTusSi', 'active'),
+('T-002', 'Teacher Two', 'teacher2@example.com', 'teacher2', '$2y$12$XPo/qSaTKIxVIejTHc1Yn.XacZYkzAZ3Ju5k3quDoXYTLD0hTusSi', 'active');
+INSERT INTO sections (section_name, school_year_id, semester_id, status, notes) VALUES
+('BSIT 22006', 1, 1, 'active', 'Regular section'),
+('BSIT 22008', 1, 1, 'active', 'Regular section'),
+('BSIT 22010', 1, 1, 'active', 'Regular section');
+INSERT INTO students (student_id, full_name, email, username, password_hash, section_id, account_status, can_submit) VALUES
+('2025-0001', 'Juan Dela Cruz', 'juan@example.com', 'juan2025', '$2y$12$DdPE2fkqQDLDfwhC/Jq6t.x4PreQgB72MECuYbs1bH8NtjKdcRO4i', 1, 'active', 1),
+('2025-0002', 'Maria Santos', 'maria@example.com', 'maria2025', '$2y$12$DdPE2fkqQDLDfwhC/Jq6t.x4PreQgB72MECuYbs1bH8NtjKdcRO4i', 1, 'active', 1),
+('2025-0003', 'Pedro Reyes', 'pedro@example.com', 'pedro2025', '$2y$12$DdPE2fkqQDLDfwhC/Jq6t.x4PreQgB72MECuYbs1bH8NtjKdcRO4i', 2, 'view_only', 0),
+('2025-0004', 'Ana Cruz', 'ana@example.com', '2025-0004', '$2y$12$DdPE2fkqQDLDfwhC/Jq6t.x4PreQgB72MECuYbs1bH8NtjKdcRO4i', 2, 'pending', 0);
+INSERT INTO subjects (subject_code, subject_name, description, teacher_id, school_year_id, semester_id, status) VALUES
+('IM101', 'Information Management', 'Project submissions for Information Management.', 1, 1, 1, 'active'),
+('WS201', 'Web Systems', 'Project submissions for Web Systems.', 2, 1, 1, 'active');
+INSERT INTO section_subjects (section_id, subject_id) VALUES (1,1), (2,1), (3,2);
+INSERT INTO teams (subject_id, section_id, leader_student_id, team_name, status) VALUES
+(1, 1, 1, 'IM101 Team Juan', 'active');
+INSERT INTO team_members (team_id, student_id, role) VALUES
+(1, 1, 'leader'),
+(1, 2, 'member');
+INSERT INTO submissions (team_id, student_id, submitted_by_student_id, section_id, subject_id, assigned_system, company_name, project_url, video_url, admin_username, admin_password, user_username, user_password, contact_email, status, grade, teacher_feedback, review_notes)
+VALUES
+(1, 1, 1, 1, 1, 'Student Project Portal', 'Campus Group', 'https://example.com/project', 'https://example.com/video', 'admin_demo', 'demo123', 'user_demo', 'demo123', 'group@example.com', 'reviewed', NULL, 'Initial seeded team submission visible to both leader and members.', 'Seed data');
+INSERT INTO submission_members (submission_id, member_name) VALUES
+(1, 'Juan Dela Cruz'),
+(1, 'Maria Santos');
+
+INSERT INTO notifications (user_type, user_id, title, message, type) VALUES
+('student', 1, 'Welcome', 'Your account has been created successfully.', 'success'),
+('student', 3, 'View-only account', 'Your account is currently view-only. Request reactivation if you need submission access again.', 'warning'),
+('teacher', 1, 'Subject Ready', 'Information Management is ready for section assignment and review.', 'info'),
+('admin', 1, 'System Ready', 'Initial academic structure has been seeded successfully.', 'success');
+
+
+-- V8 notes: mail is optional and logs to backend/logs/mail.log when disabled.
