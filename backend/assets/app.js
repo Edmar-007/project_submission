@@ -88,6 +88,20 @@ sidebarOverlay?.addEventListener('click', () => {
 
 window.addEventListener('resize', syncSidebarState);
 
+if (sidebarToggle) {
+  const updateSidebarToggleTitle = () => {
+    const mobile = window.innerWidth <= 1024;
+    const expanded = mobile ? body.classList.contains('sidebar-open') : !body.classList.contains('sidebar-collapsed');
+    sidebarToggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    sidebarToggle.setAttribute('title', expanded ? 'Collapse navigation' : 'Expand navigation');
+  };
+  updateSidebarToggleTitle();
+  const syncAndLabel = () => { syncSidebarState(); updateSidebarToggleTitle(); };
+  window.removeEventListener('resize', syncSidebarState);
+  window.addEventListener('resize', syncAndLabel);
+  sidebarToggle.addEventListener('click', () => { window.setTimeout(updateSidebarToggleTitle, 0); });
+}
+
 document.querySelectorAll('[data-toggle-menu]').forEach((button) => {
   button.addEventListener('click', (event) => {
     event.stopPropagation();
@@ -116,18 +130,25 @@ document.addEventListener('click', () => {
   }
 });
 
+const MODAL_ANIMATION_MS = 260;
+
 const closeModal = (modal) => {
   if (!modal) return;
   modal.classList.remove('open');
+  modal.classList.add('is-closing');
   modal.setAttribute('aria-hidden', 'true');
-  if (!document.querySelector('.modal-backdrop.open')) {
-    body.classList.remove('modal-open');
-  }
+  window.setTimeout(() => {
+    modal.classList.remove('is-closing');
+    if (!document.querySelector('.modal-backdrop.open')) {
+      body.classList.remove('modal-open');
+    }
+  }, MODAL_ANIMATION_MS);
 };
 
 const openModalByKey = (key) => {
   const modal = document.querySelector(`[data-modal="${key}"]`);
   if (!modal) return;
+  modal.classList.remove('is-closing');
   modal.classList.add('open');
   modal.setAttribute('aria-hidden', 'false');
   body.classList.add('modal-open');
@@ -314,9 +335,11 @@ document.querySelectorAll('[data-copy-text]').forEach((button) => {
         temp.remove();
       }
       button.textContent = 'Copied';
+      if (typeof showToast === 'function') showToast('Copied to clipboard', 'success', 'The value is ready to paste.');
       window.setTimeout(() => { button.textContent = original; }, 1200);
     } catch (error) {
       button.textContent = 'Copy failed';
+      if (typeof showToast === 'function') showToast('Copy failed', 'error', 'Your browser blocked clipboard access.');
       window.setTimeout(() => { button.textContent = original; }, 1400);
     }
   });
@@ -793,3 +816,134 @@ const initStudentSubjectFilters = () => {
 applyStoredStudentAvatar();
 initStudentAvatarControls();
 initStudentSubjectFilters();
+
+
+const initScrollTargetButtons = () => {
+  document.querySelectorAll('[data-scroll-target]').forEach((button) => {
+    if (button.dataset.boundScrollTarget === '1') return;
+    button.dataset.boundScrollTarget = '1';
+    button.addEventListener('click', () => {
+      const selector = button.getAttribute('data-scroll-target');
+      const target = selector ? document.querySelector(selector) : null;
+      if (!target) return;
+      document.querySelectorAll('.modal-backdrop.open').forEach(closeModal);
+      window.setTimeout(() => {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 80);
+    });
+  });
+};
+
+initScrollTargetButtons();
+
+
+document.querySelectorAll('[data-settings-tabs]').forEach((shell) => {
+  const buttons = Array.from(shell.querySelectorAll('[data-settings-target]'));
+  const panels = Array.from(shell.querySelectorAll('.settings-tab-panel'));
+  const activate = (targetId) => {
+    buttons.forEach((button) => {
+      const active = button.getAttribute('data-settings-target') === targetId;
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+    panels.forEach((panel) => {
+      const active = panel.id === targetId;
+      panel.classList.toggle('is-active', active);
+      panel.hidden = !active;
+    });
+  };
+  buttons.forEach((button) => {
+    button.addEventListener('click', () => activate(button.getAttribute('data-settings-target')));
+  });
+  const initial = buttons.find((button) => button.classList.contains('is-active'))?.getAttribute('data-settings-target') || panels[0]?.id;
+  if (initial) activate(initial);
+});
+
+
+const ensureToastStack = () => {
+  let stack = document.querySelector('.toast-stack');
+  if (!stack) {
+    stack = document.createElement('div');
+    stack.className = 'toast-stack';
+    document.body.appendChild(stack);
+  }
+  return stack;
+};
+
+const showToast = (message, tone = 'info', meta = '') => {
+  const stack = ensureToastStack();
+  const toast = document.createElement('div');
+  toast.className = `toast ${tone}`;
+  toast.innerHTML = `<strong>${message}</strong>${meta ? `<small>${meta}</small>` : ''}`;
+  stack.appendChild(toast);
+  window.setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(8px) scale(.98)';
+    window.setTimeout(() => toast.remove(), 220);
+  }, 2200);
+};
+
+const enhanceFlashMessages = () => {
+  document.querySelectorAll('.flash').forEach((flash) => {
+    const tone = flash.classList.contains('error') ? 'error' : flash.classList.contains('success') ? 'success' : 'info';
+    flash.setAttribute('role', 'status');
+    flash.setAttribute('aria-live', 'polite');
+    if (!flash.querySelector('[data-flash-dismiss]')) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'icon-btn';
+      btn.style.cssText = 'margin-left:auto;width:36px;height:36px;font-size:14px;box-shadow:none;';
+      btn.setAttribute('aria-label', 'Dismiss message');
+      btn.setAttribute('data-flash-dismiss', '1');
+      btn.textContent = '✕';
+      flash.style.display = 'flex';
+      flash.style.alignItems = 'center';
+      flash.style.gap = '12px';
+      flash.appendChild(btn);
+      btn.addEventListener('click', () => flash.remove());
+    }
+    flash.dataset.flashTone = tone;
+  });
+};
+
+const enhanceEmptyStates = () => {
+  document.querySelectorAll('.table-wrap table').forEach((table) => {
+    const bodyRows = table.querySelectorAll('tbody tr');
+    if (bodyRows.length !== 1) return;
+    const cells = bodyRows[0].querySelectorAll('td');
+    if (cells.length !== 1) return;
+    const cell = cells[0];
+    if ((cell.getAttribute('colspan') || '1') === '1') return;
+    if (cell.querySelector('.empty-state')) return;
+    const message = cleanLabel(cell.textContent) || 'No records available yet.';
+    cell.innerHTML = `<div class="empty-state"><strong>${message}</strong><div class="muted small">New records will appear here once data is available.</div></div>`;
+  });
+};
+
+const enhanceInteractiveCards = () => {
+  document.querySelectorAll('.student-project-card-modern, .student-project-item, .portal-card, .portal-split-card, .subject-chip, .timeline-item').forEach((card) => {
+    if (card.dataset.hoverReady === '1') return;
+    card.dataset.hoverReady = '1';
+    card.addEventListener('mousemove', (event) => {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const rect = card.getBoundingClientRect();
+      const x = ((event.clientX - rect.left) / rect.width - 0.5) * 4;
+      const y = ((event.clientY - rect.top) / rect.height - 0.5) * -4;
+      card.style.transform = `translateY(-3px) rotateX(${y}deg) rotateY(${x}deg)`;
+    });
+    card.addEventListener('mouseleave', () => {
+      card.style.transform = '';
+    });
+  });
+};
+
+const enhanceFilterRows = () => {
+  document.querySelectorAll('.filter-row').forEach((row) => {
+    row.classList.add('saas-filter-row');
+  });
+};
+
+enhanceFlashMessages();
+enhanceEmptyStates();
+enhanceInteractiveCards();
+enhanceFilterRows();

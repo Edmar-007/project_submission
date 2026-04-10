@@ -4,12 +4,18 @@ require_role('student');
 $student = current_user();
 $subjects = student_subjects((int)$student['section_id']);
 $allowed = $student['account_status'] === 'active' && (int)$student['can_submit'] === 1;
+$openSubjects = array_values(array_filter($subjects, fn($row) => empty($row['submission_locked'])));
+$canSubmitNow = $allowed && count($openSubjects) > 0;
 $historyRows = student_team_submissions((int) $student['id']);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
     if (!$allowed) {
         set_flash('error', 'Your account is not allowed to submit right now.');
+        redirect_to('student/submit.php');
+    }
+    if (!$openSubjects) {
+        set_flash('error', 'All assigned subjects are currently locked by deadline. Wait for your teacher to reopen a submission window.');
         redirect_to('student/submit.php');
     }
 
@@ -23,10 +29,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $contactEmail = trim($_POST['contact_email'] ?? '');
     $memberIdsRaw = trim($_POST['member_student_ids'] ?? '');
     $attachmentPath = null;
+    $uploadedAbsolutePath = null;
 
-    $validSubjectIds = array_map(fn($s) => (int) $s['id'], $subjects);
+    $subjectsById = [];
+    foreach ($subjects as $subjectRow) {
+        $subjectsById[(int) $subjectRow['id']] = $subjectRow;
+    }
+    $validSubjectIds = array_keys($subjectsById);
     if (!in_array($subjectId, $validSubjectIds, true)) {
         set_flash('error', 'Invalid subject selection.');
+        redirect_to('student/submit.php');
+    }
+
+    $selectedSubject = $subjectsById[$subjectId];
+    if (student_subject_locked($selectedSubject)) {
+        set_flash('error', 'The deadline for this subject has already been reached. You can submit again only if your teacher reopens the submission window.');
         redirect_to('student/submit.php');
     }
 
@@ -72,6 +89,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$subject) {
         set_flash('error', 'Subject not found.');
         redirect_to('student/submit.php');
+    }
+
+    $attachment = $_FILES['attachment'] ?? null;
+    if (is_array($attachment) && (int) ($attachment['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+        if ((int) $attachment['error'] !== UPLOAD_ERR_OK) {
+            set_flash('error', 'The attachment could not be uploaded. Please try again.');
+            redirect_to('student/submit.php');
+        }
+        if ((int) ($attachment['size'] ?? 0) > 5 * 1024 * 1024) {
+            set_flash('error', 'Attachment must be 5 MB or smaller.');
+            redirect_to('student/submit.php');
+        }
+
+        $originalName = (string) ($attachment['name'] ?? '');
+        $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+        $allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'webp'];
+        if (!in_array($extension, $allowedExtensions, true)) {
+            set_flash('error', 'Attachment must be a PDF or image file (JPG, PNG, or WEBP).');
+            redirect_to('student/submit.php');
+        }
+
+        $uploadDir = APP_ROOT . '/uploads/submissions';
+        if (!is_dir($uploadDir) && !mkdir($uploadDir, 0775, true) && !is_dir($uploadDir)) {
+            set_flash('error', 'Upload folder is not writable right now. Please contact your administrator.');
+            redirect_to('student/submit.php');
+        }
+
+        $safeBase = preg_replace('/[^a-zA-Z0-9_-]+/', '-', $student['student_id'] . '-' . $subject['subject_code']);
+        $filename = strtolower(trim($safeBase, '-')) . '-' . date('YmdHis') . '-' . bin2hex(random_bytes(4)) . '.' . $extension;
+        $uploadedAbsolutePath = $uploadDir . '/' . $filename;
+        if (!move_uploaded_file($attachment['tmp_name'], $uploadedAbsolutePath)) {
+            set_flash('error', 'Attachment could not be saved. Please try again.');
+            redirect_to('student/submit.php');
+        }
+
+        $attachmentPath = 'uploads/submissions/' . $filename;
     }
 
     try {
@@ -147,6 +200,9 @@ Regards,
         if (pdo()->inTransaction()) {
             pdo()->rollBack();
         }
+        if ($uploadedAbsolutePath && is_file($uploadedAbsolutePath)) {
+            @unlink($uploadedAbsolutePath);
+        }
         set_flash('error', 'Unable to submit the team project right now. Please verify member student IDs and try again.');
         redirect_to('student/submit.php');
     }
@@ -161,6 +217,13 @@ require_once __DIR__ . '/../backend/partials/header.php';
     <?php if (!$allowed): ?>
       <div class="flash error">Your account is currently restricted. You may still log in and view your records, but you cannot submit new projects.</div>
     <?php endif; ?>
+    <?php if ($allowed && !$openSubjects): ?>
+      <div class="flash warning">All of your assigned subjects are currently locked by deadline. Your teacher must reopen a submission window before you can submit again.</div>
+    <?php endif; ?>
+    <?php $lockedSubjectCount = count(array_filter($subjects, fn($row) => !empty($row['submission_locked']))); ?>
+    <?php if ($lockedSubjectCount > 0): ?>
+      <div class="flash warning"><?= $lockedSubjectCount ?> subject<?= $lockedSubjectCount === 1 ? '' : 's' ?> already reached the submission deadline. Choose only an open or reopened subject below.</div>
+    <?php endif; ?>
 
     <div class="student-submit-hero">
       <div class="student-submit-banner">
@@ -171,7 +234,7 @@ require_once __DIR__ . '/../backend/partials/header.php';
 
     <div class="student-submit-layout">
       <div class="card student-submit-card">
-        <form method="post" data-multistep class="multi-step student-submit-form">
+        <form method="post" enctype="multipart/form-data" data-multistep class="multi-step student-submit-form">
           <input type="hidden" name="_csrf" value="<?= h(csrf_token()) ?>">
           <div class="stepper student-stepper">
             <div>Subject</div><div>Links</div><div>Details</div><div>Members</div><div>Demo Access</div>
@@ -179,10 +242,10 @@ require_once __DIR__ . '/../backend/partials/header.php';
 
           <section class="step-panel active">
             <div class="form-grid">
-              <div class="full"><label>Subject</label><select name="subject_id" required><?php foreach ($subjects as $subject): ?><option value="<?= (int) $subject['id'] ?>" <?= ((int) ($_GET['subject_id'] ?? 0) === (int) $subject['id']) ? 'selected' : '' ?>><?= h($subject['subject_name']) ?> · <?= h($subject['subject_code']) ?></option><?php endforeach; ?></select></div>
+              <div class="full"><label>Subject</label><select name="subject_id" required <?= $canSubmitNow ? '' : 'disabled' ?>><?php if (!$canSubmitNow): ?><option value="" selected>No open subject available</option><?php endif; ?><?php foreach ($subjects as $subject): ?><option value="<?= (int) $subject['id'] ?>" <?= ((int) ($_GET['subject_id'] ?? 0) === (int) $subject['id']) ? 'selected' : '' ?> <?= !empty($subject['submission_locked']) ? 'disabled' : '' ?>><?= h($subject['subject_name']) ?> · <?= h($subject['subject_code']) ?><?= !empty($subject['submission_locked']) ? ' — deadline reached' : '' ?></option><?php endforeach; ?></select></div><div class="full muted small">Each subject follows its own submission window. Locked subjects stay visible here so you can see why they cannot be submitted.</div>
               <div class="full"><label>Contact email</label><input type="email" name="contact_email" required placeholder="group@gmail.com"></div>
             </div>
-            <div class="step-actions"><span></span><button class="btn" type="button" data-next>Continue</button></div>
+            <div class="step-actions"><span></span><button class="btn" type="button" data-next <?= $canSubmitNow ? '' : 'disabled' ?>>Continue</button></div>
           </section>
 
           <section class="step-panel">
@@ -197,6 +260,7 @@ require_once __DIR__ . '/../backend/partials/header.php';
             <div class="form-grid">
               <div><label>Assigned system</label><input name="assigned_system" required placeholder="Library Management System"></div>
               <div><label>Company / Brand</label><input name="company_name" required placeholder="ABC Corporation"></div>
+              <div class="full"><label>Optional attachment</label><input type="file" name="attachment" accept=".pdf,image/*"><div class="muted small">Upload one PDF or image up to 5 MB.</div></div>
             </div>
             <div class="step-actions"><button class="btn btn-secondary" type="button" data-prev>Back</button><button class="btn" type="button" data-next>Continue</button></div>
           </section>
@@ -215,7 +279,7 @@ require_once __DIR__ . '/../backend/partials/header.php';
               <div><label>Demo username</label><input name="demo_username" placeholder="testaccount"></div>
               <div><label>Demo password</label><input name="demo_password" placeholder="demo123"></div>
             </div>
-            <div class="step-actions"><button class="btn btn-secondary" type="button" data-prev>Back</button><button class="btn" type="submit" <?= $allowed ? '' : 'disabled' ?>>Submit Project</button></div>
+            <div class="step-actions"><button class="btn btn-secondary" type="button" data-prev>Back</button><button class="btn" type="submit" <?= $canSubmitNow ? '' : 'disabled' ?>>Submit Project</button></div>
           </section>
         </form>
       </div>
@@ -223,8 +287,8 @@ require_once __DIR__ . '/../backend/partials/header.php';
       <aside class="student-submit-sidepanel">
         <div class="student-side-stat">
           <span>Submission mode</span>
-          <strong><?= $allowed ? 'Enabled' : 'View only' ?></strong>
-          <small><?= $allowed ? 'You can submit a new team project.' : 'New submissions are temporarily disabled.' ?></small>
+          <strong><?= $canSubmitNow ? 'Enabled' : 'View only' ?></strong>
+          <small><?= $canSubmitNow ? 'You can submit a new team project.' : 'New submissions are temporarily disabled.' ?></small>
         </div>
         <div class="student-side-stat">
           <span>Shared team records</span>

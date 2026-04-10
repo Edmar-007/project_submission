@@ -184,6 +184,153 @@ function create_notification(string $userType, int $userId, string $title, strin
     $stmt->execute([$userType, $userId, $title, $message, $type]);
 }
 
+
+function notification_exists(string $userType, int $userId, string $title, string $message): bool {
+    $stmt = pdo()->prepare('SELECT COUNT(*) FROM notifications WHERE user_type = ? AND user_id = ? AND title = ? AND message = ?');
+    $stmt->execute([$userType, $userId, $title, $message]);
+    return (int) $stmt->fetchColumn() > 0;
+}
+
+function create_notification_once(string $userType, int $userId, string $title, string $message, string $type = 'info'): void {
+    if (notification_exists($userType, $userId, $title, $message)) {
+        return;
+    }
+    create_notification($userType, $userId, $title, $message, $type);
+}
+
+function ensure_deadline_schema(): void {
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+    try {
+        $pdo = pdo();
+        $columns = [];
+        foreach ($pdo->query('SHOW COLUMNS FROM subjects')->fetchAll() as $column) {
+            $columns[$column['Field']] = true;
+        }
+        $ddl = [];
+        if (!isset($columns['submission_deadline'])) { $ddl[] = 'ADD COLUMN submission_deadline DATETIME NULL AFTER status'; }
+        if (!isset($columns['deadline_warning_hours'])) { $ddl[] = 'ADD COLUMN deadline_warning_hours INT NOT NULL DEFAULT 72 AFTER submission_deadline'; }
+        if (!isset($columns['deadline_warning_sent_at'])) { $ddl[] = 'ADD COLUMN deadline_warning_sent_at DATETIME NULL AFTER deadline_warning_hours'; }
+        if (!isset($columns['deadline_locked_notice_sent_at'])) { $ddl[] = 'ADD COLUMN deadline_locked_notice_sent_at DATETIME NULL AFTER deadline_warning_sent_at'; }
+        if (!isset($columns['allow_late_submissions'])) { $ddl[] = 'ADD COLUMN allow_late_submissions TINYINT(1) NOT NULL DEFAULT 0 AFTER deadline_locked_notice_sent_at'; }
+        if (!isset($columns['late_submission_until'])) { $ddl[] = 'ADD COLUMN late_submission_until DATETIME NULL AFTER allow_late_submissions'; }
+        if ($ddl) {
+            $pdo->exec('ALTER TABLE subjects ' . implode(', ', $ddl));
+        }
+    } catch (Throwable $e) {
+    }
+}
+
+function send_deadline_mail_if_possible(string $email, string $subject, string $body): void {
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        return;
+    }
+    require_once __DIR__ . '/../helpers/mailer.php';
+    send_system_mail($email, $subject, $body);
+}
+
+function subject_deadline_window(array $subject): array {
+    $deadlineRaw = trim((string) ($subject['submission_deadline'] ?? ''));
+    if ($deadlineRaw === '') {
+        return ['has_deadline' => false, 'state' => 'open', 'label' => 'No deadline set'];
+    }
+    try {
+        $now = new DateTimeImmutable('now');
+        $deadline = new DateTimeImmutable($deadlineRaw);
+    } catch (Throwable $e) {
+        return ['has_deadline' => false, 'state' => 'open', 'label' => 'Invalid deadline'];
+    }
+    $warningHours = max(1, (int) ($subject['deadline_warning_hours'] ?? 72));
+    $warningStart = $deadline->sub(new DateInterval('PT' . $warningHours . 'H'));
+    $allowLate = (int) ($subject['allow_late_submissions'] ?? 0) === 1;
+    $lateUntilRaw = trim((string) ($subject['late_submission_until'] ?? ''));
+    $lateUntil = null;
+    if ($lateUntilRaw !== '') {
+        try { $lateUntil = new DateTimeImmutable($lateUntilRaw); } catch (Throwable $e) { $lateUntil = null; }
+    }
+    $lateOverrideActive = $allowLate && ($lateUntil === null || $now <= $lateUntil);
+    if ($now >= $deadline) {
+        if ($lateOverrideActive) {
+            $label = 'Deadline reached — teacher reopened submissions';
+            if ($lateUntil) { $label .= ' until ' . $lateUntil->format('M d, Y h:i A'); }
+            return ['has_deadline' => true, 'state' => 'reopened', 'label' => $label, 'deadline' => $deadline, 'late_override_active' => true, 'late_until' => $lateUntil];
+        }
+        return ['has_deadline' => true, 'state' => 'locked', 'label' => 'Deadline reached on ' . $deadline->format('M d, Y h:i A'), 'deadline' => $deadline, 'late_override_active' => false, 'late_until' => $lateUntil];
+    }
+    if ($now >= $warningStart) {
+        return ['has_deadline' => true, 'state' => 'warning', 'label' => 'Deadline near: ' . $deadline->format('M d, Y h:i A'), 'deadline' => $deadline, 'late_override_active' => false, 'late_until' => $lateUntil];
+    }
+    return ['has_deadline' => true, 'state' => 'open', 'label' => 'Open until ' . $deadline->format('M d, Y h:i A'), 'deadline' => $deadline, 'late_override_active' => false, 'late_until' => $lateUntil];
+}
+
+function process_subject_deadlines(): void {
+    static $processed = false;
+    if ($processed) {
+        return;
+    }
+    $processed = true;
+    ensure_deadline_schema();
+    try {
+        $pdo = pdo();
+        $subjects = $pdo->query('SELECT subj.*, t.full_name AS teacher_name, t.email AS teacher_email FROM subjects subj JOIN teachers t ON t.id = subj.teacher_id WHERE subj.status IN ("active", "inactive") AND subj.submission_deadline IS NOT NULL')->fetchAll();
+        foreach ($subjects as $subject) {
+            $window = subject_deadline_window($subject);
+            if (empty($window['has_deadline'])) {
+                continue;
+            }
+            $studentStmt = $pdo->prepare('SELECT DISTINCT st.id, st.full_name, st.email FROM section_subjects ss JOIN students st ON st.section_id = ss.section_id WHERE ss.subject_id = ? AND st.account_status <> "archived"');
+            $studentStmt->execute([(int) $subject['id']]);
+            $students = $studentStmt->fetchAll();
+            if ($window['state'] === 'warning' && empty($subject['deadline_warning_sent_at'])) {
+                $title = 'Deadline approaching: ' . $subject['subject_name'];
+                $message = 'The submission deadline for ' . $subject['subject_name'] . ' is near. Final deadline: ' . $window['deadline']->format('M d, Y h:i A') . '. Submit before the cutoff to avoid being locked out.';
+                foreach ($students as $student) {
+                    create_notification_once('student', (int) $student['id'], $title, $message, 'warning');
+                    send_deadline_mail_if_possible((string) $student['email'], $title, "Hello {$student['full_name']},
+
+{$message}
+
+Regards,
+" . APP_NAME);
+                }
+                create_notification_once('teacher', (int) $subject['teacher_id'], $title, 'Your students have been warned that the deadline for ' . $subject['subject_name'] . ' is approaching.', 'warning');
+                send_deadline_mail_if_possible((string) $subject['teacher_email'], $title, "Hello {$subject['teacher_name']},
+
+Your students have been warned that the deadline for {$subject['subject_name']} is approaching.
+
+Regards,
+" . APP_NAME);
+                $pdo->prepare('UPDATE subjects SET deadline_warning_sent_at = NOW() WHERE id = ?')->execute([(int) $subject['id']]);
+            }
+            if ($window['state'] === 'locked' && empty($subject['deadline_locked_notice_sent_at'])) {
+                $title = 'Deadline reached: ' . $subject['subject_name'];
+                $message = 'The deadline for ' . $subject['subject_name'] . ' has been reached. New submissions are now blocked unless your teacher reopens the submission window.';
+                foreach ($students as $student) {
+                    create_notification_once('student', (int) $student['id'], $title, $message, 'warning');
+                    send_deadline_mail_if_possible((string) $student['email'], $title, "Hello {$student['full_name']},
+
+{$message}
+
+Regards,
+" . APP_NAME);
+                }
+                create_notification_once('teacher', (int) $subject['teacher_id'], $title, 'The deadline for ' . $subject['subject_name'] . ' has been reached. Students are now blocked from new submissions unless you reopen them.', 'warning');
+                send_deadline_mail_if_possible((string) $subject['teacher_email'], $title, "Hello {$subject['teacher_name']},
+
+The deadline for {$subject['subject_name']} has been reached. Students are now blocked from new submissions unless you reopen them.
+
+Regards,
+" . APP_NAME);
+                $pdo->prepare('UPDATE subjects SET deadline_locked_notice_sent_at = NOW() WHERE id = ?')->execute([(int) $subject['id']]);
+            }
+        }
+    } catch (Throwable $e) {
+    }
+}
+
 function log_action(string $actorType, int $actorId, string $action, string $targetType, int $targetId, string $description = ''): void {
     $stmt = pdo()->prepare('INSERT INTO audit_logs (actor_type, actor_id, action, target_type, target_id, description) VALUES (?, ?, ?, ?, ?, ?)');
     $stmt->execute([$actorType, $actorId, $action, $targetType, $targetId, $description]);
@@ -212,3 +359,6 @@ function count_unread_notifications(string $userType, int $userId): int {
     $stmt->execute([$userType, $userId]);
     return (int) $stmt->fetchColumn();
 }
+
+ensure_deadline_schema();
+process_subject_deadlines();

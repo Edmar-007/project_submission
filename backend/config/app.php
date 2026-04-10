@@ -23,6 +23,10 @@ function url(string $path = ''): string {
     return rtrim(APP_URL, '/') . '/' . ltrim($path, '/');
 }
 
+function url_for(string $path = ''): string {
+    return url($path);
+}
+
 function redirect(string $target): void {
     header('Location: ' . $target);
     exit;
@@ -83,4 +87,8 @@ function now_label(): string {
 
 function selected(string $left, string $right): string {
     return $left === $right ? 'selected' : '';
+}
+
+if (!defined('MAIL_ENABLED')) {
+    require_once __DIR__ . '/mail.php';
 }

@@ -168,7 +168,7 @@ require_once __DIR__ . '/../backend/partials/header.php';
             <div class="list-item">
               <div>
                 <strong><?= h($subject['subject_name']) ?></strong>
-                <div class="muted small"><?= h($subject['subject_code']) ?> · <?= h($subject['teacher_name']) ?></div>
+                <div class="muted small"><?= h($subject['subject_code']) ?> · <?= h($subject['teacher_name']) ?></div><div class="muted small"><?= h(($subject['deadline_window']['label'] ?? 'No deadline set')) ?></div>
               </div>
               <?php if ($team): ?>
                 <span class="badge success"><?= h($team['role'] === 'leader' ? 'Team leader' : 'Team member') ?></span>

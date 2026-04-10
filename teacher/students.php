@@ -271,21 +271,21 @@ function build_import_preview(array $rows, array $sections, PDO $pdo): array {
     ];
 }
 
-if (($_GET['download_template'] ?? '') !== '') {
-    verify_csrf();
-    teacher_download_template($_GET['download_template'] === 'csv' ? 'csv' : 'xlsx');
-}
-
-if (($_GET['clear_preview'] ?? '') === '1') {
-    verify_csrf();
-    unset($_SESSION[$previewSessionKey]);
-    set_flash('success', 'Import preview cleared.');
-    redirect_to('teacher/students.php');
-}
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
     $action = $_POST['action'] ?? 'invite';
+
+    if ($action === 'download_template') {
+        $type = (($_POST['template_type'] ?? '') === 'csv') ? 'csv' : 'xlsx';
+        teacher_download_template($type);
+    }
+
+    if ($action === 'clear_preview') {
+        unset($_SESSION[$previewSessionKey]);
+        set_flash('success', 'Import preview cleared.');
+        redirect_to('teacher/students.php');
+    }
+
     if ($action === 'invite') {
         $studentId = trim($_POST['student_id'] ?? '');
         $fullName = trim($_POST['full_name'] ?? '');
@@ -434,6 +434,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $preview = $_SESSION[$previewSessionKey] ?? null;
+$mailTransportActive = ((string) MAIL_ENABLED === '1');
+$mailTransportLabel = $mailTransportActive ? (((string) MAIL_USERNAME !== '' || (string) MAIL_PASSWORD !== '') ? 'SMTP delivery is enabled.' : 'PHP mail delivery is enabled.') : 'Email delivery is disabled. Activation emails are only logged.';
 $sql = 'SELECT DISTINCT st.*, sec.section_name, (SELECT COUNT(*) FROM account_activation_tokens aat WHERE aat.student_id = st.id AND aat.used_at IS NULL AND aat.expires_at > NOW()) AS open_invites FROM students st JOIN sections sec ON sec.id = st.section_id JOIN section_subjects ss ON ss.section_id = sec.id JOIN subjects subj ON subj.id = ss.subject_id WHERE subj.teacher_id = ?';
 $params = [$teacherId];
 if ($search !== '') {
@@ -449,15 +451,82 @@ $title = 'Teacher Students';
 $subtitle = 'Bulk import your class list, preview it, then let students activate their own accounts with secure links.';
 require_once __DIR__ . '/../backend/partials/header.php';
 ?>
-<div class="grid cols-2">
+<div class="grid cols-2 teacher-students-top-grid">
   <div class="card highlight-card teacher-import-card">
-    <div class="split-header"><div><h3 class="section-title">Bulk onboarding</h3><div class="muted small">Download the template, fill it from your class list, upload it, and let the system create pending student accounts in one pass.</div></div><span class="pill">Recommended</span></div>
-    <div class="quick-grid" style="margin-bottom:16px;">
-      <a class="btn btn-secondary" href="<?= h(url('teacher/students.php?download_template=xlsx&_csrf=' . urlencode(csrf_token()))) ?>">Download Excel template</a>
-      <a class="btn btn-outline" href="<?= h(url('teacher/students.php?download_template=csv&_csrf=' . urlencode(csrf_token()))) ?>">Download CSV template</a>
+    <div class="split-header"><div><h3 class="section-title">Bulk onboarding</h3><div class="muted small">Use one reusable workflow: download the class template, upload it once, preview the import, then let students activate their accounts by email.</div></div><span class="pill">Recommended</span></div>
+    <div class="quick-grid quick-grid-actions teacher-bulk-action-grid" style="margin-bottom:16px;">
+      <form method="post" class="inline quick-action-form">
+        <input type="hidden" name="_csrf" value="<?= h(csrf_token()) ?>">
+        <input type="hidden" name="action" value="download_template">
+        <input type="hidden" name="template_type" value="xlsx">
+        <button class="btn btn-secondary" type="submit">Download Excel template</button>
+      </form>
+      <form method="post" class="inline quick-action-form">
+        <input type="hidden" name="_csrf" value="<?= h(csrf_token()) ?>">
+        <input type="hidden" name="action" value="download_template">
+        <input type="hidden" name="template_type" value="csv">
+        <button class="btn btn-outline" type="submit">Download CSV template</button>
+      </form>
+      <button class="btn" type="button" data-open-modal="teacher-student-import">Open import workspace</button>
       <a class="btn btn-secondary" href="<?= h(url('student/')) ?>" target="_blank">Open student portal</a>
     </div>
-    <form method="post" enctype="multipart/form-data" class="stack">
+    <div class="callout teacher-mail-callout <?= $mailTransportActive ? 'is-success' : 'is-warning' ?>">
+      <strong>Email delivery</strong>
+      <div class="muted small"><?= h($mailTransportLabel) ?></div>
+    </div>
+  </div>
+  <div class="card teacher-workflow-card">
+    <div class="split-header"><div><h3 class="section-title">Interactive teacher workflow</h3><div class="muted small">Follow the guided steps instead of guessing the order. Each step launches the right action for you.</div></div><button class="btn btn-outline" type="button" data-open-modal="teacher-workflow-guide">Open full guide</button></div>
+    <div class="workflow-step-grid">
+      <button type="button" class="workflow-step-card" data-open-modal="teacher-student-import">
+        <span class="workflow-step-number">1</span>
+        <strong>Download and upload</strong>
+        <span class="muted small">Open the import workspace, download the template, and upload your class file.</span>
+      </button>
+      <button type="button" class="workflow-step-card" data-scroll-target="#teacher-import-preview">
+        <span class="workflow-step-number">2</span>
+        <strong>Review the preview</strong>
+        <span class="muted small">Jump to the preview table and fix blocked rows before confirming.</span>
+      </button>
+      <button type="button" class="workflow-step-card" data-scroll-target="#teacher-student-roster">
+        <span class="workflow-step-number">3</span>
+        <strong>Check roster status</strong>
+        <span class="muted small">Verify who is pending, active, or needs a fresh activation link.</span>
+      </button>
+    </div>
+    <div class="callout teacher-workflow-note">
+      <strong>Recommendation</strong>
+      <div class="muted small">Use manual add only for exceptions. Your normal section onboarding should always start from the import workspace.</div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" data-modal="teacher-student-import" aria-hidden="true">
+  <div class="modal-card teacher-workflow-modal-card" role="dialog" aria-modal="true" aria-labelledby="teacher-import-title">
+    <div class="modal-head">
+      <div>
+        <span class="pill soft">Workspace modal</span>
+        <h3 id="teacher-import-title">Bulk onboarding workspace</h3>
+      </div>
+      <button type="button" class="icon-btn modal-close" data-close-modal aria-label="Close dialog">✕</button>
+    </div>
+    <p class="muted">Download the right template, upload the class list, and preview the result before any student is created.</p>
+    <div class="workflow-modal-actions">
+      <form method="post" class="inline quick-action-form">
+        <input type="hidden" name="_csrf" value="<?= h(csrf_token()) ?>">
+        <input type="hidden" name="action" value="download_template">
+        <input type="hidden" name="template_type" value="xlsx">
+        <button class="btn btn-secondary" type="submit">Download Excel template</button>
+      </form>
+      <form method="post" class="inline quick-action-form">
+        <input type="hidden" name="_csrf" value="<?= h(csrf_token()) ?>">
+        <input type="hidden" name="action" value="download_template">
+        <input type="hidden" name="template_type" value="csv">
+        <button class="btn btn-outline" type="submit">Download CSV template</button>
+      </form>
+      <a class="btn btn-secondary" href="<?= h(url('student/')) ?>" target="_blank">Open student portal</a>
+    </div>
+    <form method="post" enctype="multipart/form-data" class="stack teacher-import-modal-form">
       <input type="hidden" name="_csrf" value="<?= h(csrf_token()) ?>">
       <input type="hidden" name="action" value="preview_import">
       <div class="import-dropzone">
@@ -468,29 +537,37 @@ require_once __DIR__ . '/../backend/partials/header.php';
       <div class="form-actions"><button class="btn" type="submit">Preview import</button><span class="muted small">Nothing is saved until you confirm the preview.</span></div>
     </form>
   </div>
-  <div class="card">
-    <h3 class="section-title">Best workflow for teachers</h3>
-    <div class="timeline-list">
-      <div class="timeline-item"><strong>1. Download the template</strong><p>Use the built-in format so the import reads your student IDs, emails, and section names cleanly.</p></div>
-      <div class="timeline-item"><strong>2. Upload and preview</strong><p>The system checks duplicates, missing values, invalid emails, and whether the section belongs to your teaching scope.</p></div>
-      <div class="timeline-item"><strong>3. Confirm import</strong><p>Pending accounts are created or refreshed, then activation links are sent automatically.</p></div>
+</div>
+
+<div class="modal-backdrop" data-modal="teacher-workflow-guide" aria-hidden="true">
+  <div class="modal-card teacher-workflow-modal-card" role="dialog" aria-modal="true" aria-labelledby="teacher-workflow-title">
+    <div class="modal-head">
+      <div>
+        <span class="pill soft">Workflow guide</span>
+        <h3 id="teacher-workflow-title">Best workflow for teachers</h3>
+      </div>
+      <button type="button" class="icon-btn modal-close" data-close-modal aria-label="Close dialog">✕</button>
     </div>
-    <div class="callout" style="margin-top:14px;">
-      <strong>Recommendation</strong>
-      <div class="muted small">Keep manual one-by-one invites only for late adds or special cases. Bulk import should be your main section onboarding flow.</div>
+    <div class="timeline-list interactive-timeline-list">
+      <div class="timeline-item interactive-timeline-item"><strong>1. Download the template</strong><p>Use the built-in format so the import reads your student IDs, emails, and section names cleanly.</p><button class="btn btn-outline" type="button" data-open-modal="teacher-student-import">Open import workspace</button></div>
+      <div class="timeline-item interactive-timeline-item"><strong>2. Upload and preview</strong><p>The system checks duplicates, missing values, invalid emails, and whether the section belongs to your teaching scope.</p><button class="btn btn-outline" type="button" data-scroll-target="#teacher-import-preview">Jump to preview area</button></div>
+      <div class="timeline-item interactive-timeline-item"><strong>3. Confirm import</strong><p>Pending accounts are created or refreshed, then activation links are sent automatically.</p><button class="btn btn-outline" type="button" data-scroll-target="#teacher-student-roster">Open roster status</button></div>
     </div>
   </div>
 </div>
-
 <?php if ($preview && !empty($preview['rows'])): ?>
-<div class="card" style="margin-top:18px;">
+<div class="card" id="teacher-import-preview" style="margin-top:18px;">
   <div class="split-header">
     <div>
       <h3 class="section-title">Import preview</h3>
       <div class="muted small">Review every row before it is committed. Errors stay blocked until the file is corrected and uploaded again.</div>
     </div>
     <div class="action-row">
-      <a class="btn btn-outline" href="<?= h(url('teacher/students.php?clear_preview=1&_csrf=' . urlencode(csrf_token()))) ?>">Clear preview</a>
+      <form method="post" class="inline">
+        <input type="hidden" name="_csrf" value="<?= h(csrf_token()) ?>">
+        <input type="hidden" name="action" value="clear_preview">
+        <button class="btn btn-outline" type="submit">Clear preview</button>
+      </form>
       <?php if ((int) $preview['importable_count'] > 0): ?>
       <form method="post" class="inline">
         <input type="hidden" name="_csrf" value="<?= h(csrf_token()) ?>">
@@ -531,37 +608,51 @@ require_once __DIR__ . '/../backend/partials/header.php';
 </div>
 <?php endif; ?>
 
-<div class="grid cols-2" style="margin-top:18px;">
-  <div class="card">
-    <div class="split-header"><div><h3 class="section-title">Students in your teaching scope</h3><div class="muted small">Search by student ID, name, or email to resend activation links or review access status.</div></div></div>
+<div class="card" id="teacher-student-roster" style="margin-top:18px;">
+  <div class="split-header"><div><h3 class="section-title">Students in your teaching scope</h3><div class="muted small">Search by student ID, name, or email to resend activation links or review access status.</div></div><div class="table-head-actions"><button class="btn" type="button" data-open-modal="teacher-add-student">Add student</button></div></div>
     <form method="get" class="filter-row">
       <input name="q" placeholder="Search by student ID, name, email" value="<?= h($search) ?>">
       <button class="btn btn-secondary" type="submit">Search</button>
     </form>
-    <div class="table-wrap"><table><thead><tr><th>Student</th><th>Section</th><th>Status</th><th>Access</th><th>Invite</th><th>Actions</th></tr></thead><tbody>
+    <div class="table-wrap teacher-student-roster-wrap"><table class="teacher-student-roster"><thead><tr><th>Student</th><th>Section</th><th>Status</th><th>Access</th><th>Invite</th><th>Actions</th></tr></thead><tbody>
     <?php foreach ($students as $row): ?>
       <tr>
-        <td><strong><?= h($row['full_name']) ?></strong><div class="muted small"><?= h($row['student_id']) ?> · <?= h($row['email']) ?></div></td>
-        <td><?= h($row['section_name']) ?></td>
-        <td><?= status_badge($row['account_status']) ?></td>
-        <td><?= (int) $row['can_submit'] ? 'Can submit' : 'Restricted' ?></td>
-        <td><?= (int) $row['open_invites'] > 0 ? '<span class="pill">Pending invite</span>' : '<span class="muted small">No open invite</span>' ?></td>
-        <td><div class="table-actions"><?php if ($row['account_status'] === 'pending'): ?><form method="post" class="inline"><input type="hidden" name="_csrf" value="<?= h(csrf_token()) ?>"><input type="hidden" name="action" value="resend"><input type="hidden" name="student_pk" value="<?= (int) $row['id'] ?>"><button class="btn btn-outline" type="submit">Resend invite</button></form><?php else: ?><span class="muted small">Active onboarding completed</span><?php endif; ?></div></td>
+        <td data-label="Student">
+          <div class="roster-student-cell">
+            <div class="student-avatar-badge" aria-hidden="true"><?= h(strtoupper(substr($row['full_name'], 0, 1))) ?></div>
+            <div>
+              <strong><?= h($row['full_name']) ?></strong>
+              <div class="muted small"><?= h($row['student_id']) ?> · <?= h($row['email']) ?></div>
+            </div>
+          </div>
+        </td>
+        <td data-label="Section"><span class="pill soft"><?= h($row['section_name']) ?></span></td>
+        <td data-label="Status"><?= status_badge($row['account_status']) ?></td>
+        <td data-label="Access"><span class="access-indicator <?= (int) $row['can_submit'] ? 'is-open' : 'is-restricted' ?>"><?= (int) $row['can_submit'] ? 'Can submit' : 'Restricted' ?></span></td>
+        <td data-label="Invite"><?= (int) $row['open_invites'] > 0 ? '<span class="pill">Pending invite</span>' : '<span class="muted small">No open invite</span>' ?></td>
+        <td data-label="Actions">
+          <div class="table-actions stack-on-mobile"><?php if ($row['account_status'] === 'pending'): ?><form method="post" class="inline"><input type="hidden" name="_csrf" value="<?= h(csrf_token()) ?>"><input type="hidden" name="action" value="resend"><input type="hidden" name="student_pk" value="<?= (int) $row['id'] ?>"><button class="btn btn-outline" type="submit">Resend invite</button></form><?php else: ?><span class="muted small">Active onboarding completed</span><?php endif; ?></div>
+        </td>
       </tr>
     <?php endforeach; ?>
     <?php if (!$students): ?><tr><td colspan="6" class="empty-state">No students found under your assigned sections yet.</td></tr><?php endif; ?>
     </tbody></table></div>
-  </div>
-  <div class="card">
-    <div class="split-header"><div><h3 class="section-title">Manual add for exceptions</h3><div class="muted small">Use this only when one student joins late or needs to be corrected outside the bulk file.</div></div><span class="pill">Secondary</span></div>
-    <form method="post" class="form-grid">
+</div>
+
+<div class="modal-backdrop" data-modal="teacher-add-student" aria-hidden="true">
+  <div class="modal-card teacher-workflow-modal-card" role="dialog" aria-modal="true" aria-labelledby="teacher-add-student-title">
+    <div class="modal-head">
+      <div><span class="pill soft">Teacher modal</span><h3 id="teacher-add-student-title">Add student</h3><p class="muted">Use this only for late joiners or one-off exceptions. Bulk import stays the primary workflow.</p></div>
+      <button type="button" class="icon-btn modal-close" data-close-modal aria-label="Close dialog">✕</button>
+    </div>
+    <form method="post" class="form-grid modal-form-grid">
       <input type="hidden" name="_csrf" value="<?= h(csrf_token()) ?>">
       <input type="hidden" name="action" value="invite">
       <div><label>Student ID</label><input name="student_id" required placeholder="2025-0005"></div>
       <div><label>Full name</label><input name="full_name" required></div>
       <div><label>Email address</label><input type="email" name="email" required></div>
       <div><label>Section</label><select name="section_id" required><option value="">Select your section</option><?php foreach ($sections as $section): ?><option value="<?= (int) $section['id'] ?>"><?= h($section['section_name']) ?></option><?php endforeach; ?></select></div>
-      <div class="full form-actions"><button class="btn" type="submit">Send manual invitation</button></div>
+      <div class="full form-actions modal-form-actions"><button class="btn" type="submit">Send manual invitation</button><button class="btn btn-outline" type="button" data-close-modal>Cancel</button></div>
     </form>
   </div>
 </div>

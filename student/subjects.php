@@ -5,81 +5,46 @@ $student = current_user();
 $subjects = student_subjects((int)$student['section_id']);
 $submissions = student_team_submissions((int) $student['id']);
 $statusMap = [];
-foreach ($submissions as $submission) {
-    $statusMap[(int) $submission['subject_id']] = $submission;
-}
+foreach ($submissions as $submission) { $statusMap[(int) $submission['subject_id']] = $submission; }
 $statusFilter = trim($_GET['state'] ?? '');
 $search = trim($_GET['search'] ?? '');
 $title = 'My Subjects';
-$subtitle = 'Subjects assigned automatically through your section';
+$subtitle = 'Student tables now use the same cleaner structure as admin and teacher pages.';
 require_once __DIR__ . '/../backend/partials/header.php';
 ?>
-<section class="student-page-shell">
-  <div class="student-page-card">
-    <div class="student-page-toolbar">
-      <div>
-        <div class="eyebrow">Student Subjects</div>
-        <h2>My Subjects</h2>
-        <p>Review your assigned subjects, track team submission progress, and jump directly into the correct project form.</p>
-      </div>
-      <form method="get" class="student-toolbar-filters subject-toolbar-filters" data-student-subject-filters>
-        <label class="student-search-box">
-          <span>🔎</span>
-          <input type="search" name="search" value="<?= h($search) ?>" placeholder="Search subject or teacher" data-student-search>
-        </label>
-        <select name="state" data-student-state>
-          <option value="">All status</option>
-          <option value="ready" <?= selected($statusFilter, 'ready') ?>>Ready to submit</option>
-          <option value="pending" <?= selected($statusFilter, 'pending') ?>>Pending review</option>
-          <option value="reviewed" <?= selected($statusFilter, 'reviewed') ?>>Reviewed</option>
-          <option value="graded" <?= selected($statusFilter, 'graded') ?>>Graded</option>
-        </select>
-        <button class="btn btn-secondary" type="submit">Filter</button>
-      </form>
+<section class="table-card table-bootstrap-shell student-table-card">
+  <div class="module-header">
+    <div>
+      <div class="eyebrow">Student Subjects</div>
+      <h3 class="mb-1">Assigned Subject Table</h3>
+      <p class="muted mb-0">Browse subjects, see the deadline state, and jump straight into the correct submission flow.</p>
     </div>
-
-    <div class="student-subject-grid" data-student-subject-grid>
+    <div class="module-actions"><span class="badge-soft"><i class="bi bi-journal-text"></i> <?= count($subjects) ?> subjects</span></div>
+  </div>
+  <div class="table-toolbar">
+    <form method="get" class="filters">
+      <input class="form-control" type="search" name="search" value="<?= h($search) ?>" placeholder="Search subject or teacher">
+      <select class="form-select" name="state"><option value="">All status</option><option value="ready" <?= selected($statusFilter, 'ready') ?>>Ready to submit</option><option value="pending" <?= selected($statusFilter, 'pending') ?>>Pending review</option><option value="reviewed" <?= selected($statusFilter, 'reviewed') ?>>Reviewed</option><option value="graded" <?= selected($statusFilter, 'graded') ?>>Graded</option></select>
+      <button class="btn" type="submit"><i class="bi bi-funnel"></i> Filter</button>
+    </form>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead><tr><th>Subject</th><th>Teacher</th><th>Deadline</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
+      <tbody>
       <?php foreach ($subjects as $subject): ?>
-        <?php
-          $submission = $statusMap[(int) $subject['id']] ?? null;
-          $subjectStatus = $submission['status'] ?? 'ready';
-          $progress = 18;
-          if ($subjectStatus === 'pending') $progress = 58;
-          if ($subjectStatus === 'reviewed') $progress = 82;
-          if ($subjectStatus === 'graded') $progress = 100;
-          $searchBlob = strtolower($subject['subject_name'] . ' ' . $subject['subject_code'] . ' ' . $subject['teacher_name']);
-        ?>
-        <article class="student-subject-card" data-status="<?= h($subjectStatus) ?>" data-search="<?= h($searchBlob) ?>">
-          <div class="student-subject-head">
-            <div>
-              <h3><?= h($subject['subject_name']) ?></h3>
-              <div class="student-subject-meta"><?= h($subject['subject_code']) ?> · <?= h($subject['teacher_name']) ?></div>
-            </div>
-            <?= status_badge($subjectStatus === 'ready' ? 'active' : $subjectStatus) ?>
-          </div>
-
-          <div class="student-progress-wrap">
-            <div class="student-progress-bar"><span style="width: <?= (int) $progress ?>%"></span></div>
-            <div class="student-progress-copy">
-              <strong><?= $progress ?>%</strong>
-              <span>
-                <?php if ($subjectStatus === 'ready'): ?>Start your team submission<?php elseif ($subjectStatus === 'pending'): ?>Waiting for teacher review<?php elseif ($subjectStatus === 'reviewed'): ?>Review posted · update if needed<?php else: ?>Grade available<?php endif; ?>
-              </span>
-            </div>
-          </div>
-
-          <p class="student-subject-copy"><?= h($subject['description'] ?: 'This subject is assigned through your current section and is ready for your team project workflow.') ?></p>
-
-          <div class="student-subject-footer">
-            <a class="btn btn-secondary" href="<?= h(url('student/submit.php?subject_id=' . (int)$subject['id'])) ?>">Submit for this subject</a>
-            <a class="btn btn-ghost" href="<?= h(url('student/my_submissions.php')) ?>">Open team project</a>
-          </div>
-        </article>
+        <?php $submission = $statusMap[(int) $subject['id']] ?? null; $subjectStatus = $submission['status'] ?? 'ready'; $searchBlob = strtolower($subject['subject_name'] . ' ' . $subject['subject_code'] . ' ' . $subject['teacher_name']); if ($search && !str_contains($searchBlob, strtolower($search))) continue; if ($statusFilter !== '' && $subjectStatus !== $statusFilter) continue; ?>
+        <tr>
+          <td><strong><?= h($subject['subject_name']) ?></strong><div class="muted small"><?= h($subject['subject_code']) ?></div><div class="muted small"><?= h($subject['description'] ?: 'Assigned through your section.') ?></div></td>
+          <td><?= h($subject['teacher_name']) ?></td>
+          <td><?= deadline_badge_html($subject) ?><div class="muted small mt-1"><?= h(($subject['deadline_window']['label'] ?? 'No deadline set')) ?></div></td>
+          <td><?= status_badge($subjectStatus === 'ready' ? 'active' : $subjectStatus) ?></td>
+          <td class="text-end"><div class="icon-action-group justify-content-end"><?php if (!empty($subject['submission_locked'])): ?><span class="icon-action" title="Deadline reached"><i class="bi bi-lock"></i></span><?php else: ?><a class="icon-action" href="<?= h(url('student/submit.php?subject_id=' . (int)$subject['id'])) ?>" title="Submit for this subject"><i class="bi bi-upload"></i></a><?php endif; ?><a class="icon-action" href="<?= h(url('student/my_submissions.php')) ?>" title="Open team project"><i class="bi bi-eye"></i></a></div></td>
+        </tr>
       <?php endforeach; ?>
-      <?php if (!$subjects): ?>
-        <div class="card empty-state">No active subjects are assigned to your section yet.</div>
-      <?php endif; ?>
-    </div>
+      <?php if (!$subjects): ?><tr><td colspan="5" class="table-empty">No active subjects are assigned to your section yet.</td></tr><?php endif; ?>
+      </tbody>
+    </table>
   </div>
 </section>
 <?php require_once __DIR__ . '/../backend/partials/footer.php'; ?>

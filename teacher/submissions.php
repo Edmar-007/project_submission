@@ -33,137 +33,14 @@ $params = [(int) $teacher['id']];
 if ($filterSubject) { $sql .= ' AND sub.subject_id = ?'; $params[] = $filterSubject; }
 if ($filterStatus !== '') { $sql .= ' AND sub.status = ?'; $params[] = $filterStatus; }
 $sql .= ' ORDER BY sub.submitted_at DESC';
-$stmt = $pdo->prepare($sql);
-$stmt->execute($params);
-$rows = $stmt->fetchAll();
+$stmt = $pdo->prepare($sql); $stmt->execute($params); $rows = $stmt->fetchAll();
 $summary = ['total' => count($rows), 'pending' => 0, 'reviewed' => 0, 'graded' => 0];
-foreach ($rows as $row) {
-    if (isset($summary[$row['status']])) { $summary[$row['status']]++; }
-}
+foreach ($rows as $row) { if (isset($summary[$row['status']])) { $summary[$row['status']]++; } }
 $title = 'Teacher Submissions';
-$subtitle = 'Open, review, and grade only the submissions that belong to your assigned subjects';
+$subtitle = 'Teacher review space cleaned into one focused table with quick review modals.';
 require_once __DIR__ . '/../backend/partials/header.php';
 ?>
-<div class="grid cols-4" style="margin-bottom:18px;">
-  <div class="card metric-card"><span class="metric-label">Visible to you</span><div class="metric"><strong><?= (int) $summary['total'] ?></strong><span class="metric-trend">Assigned submissions only</span></div></div>
-  <div class="card"><span class="metric-label">Pending</span><div class="stat-mini"><strong><?= (int) $summary['pending'] ?></strong><span class="muted">Needs first review</span></div></div>
-  <div class="card"><span class="metric-label">Reviewed</span><div class="stat-mini"><strong><?= (int) $summary['reviewed'] ?></strong><span class="muted">Seen but not finalized</span></div></div>
-  <div class="card"><span class="metric-label">Graded</span><div class="stat-mini"><strong><?= (int) $summary['graded'] ?></strong><span class="muted">Ready for student view</span></div></div>
-</div>
-<div class="card">
-  <div class="callout" style="margin-bottom:16px;">You only see submissions for <strong>subjects directly assigned to your teacher account</strong>. Other teachers cannot open these rows even if they teach a similar subject.</div>
-  <div class="teacher-submission-toolbar">
-    <div>
-      <h3 style="margin:0 0 4px;">Submission review workspace</h3>
-      <p class="muted" style="margin:0;">Open links, check demo access, and leave a quick review without losing the row context.</p>
-    </div>
-  </div>
-  <form method="get" class="filter-row teacher-submission-filters">
-    <select name="subject_id"><option value="0">All assigned subjects</option><?php foreach ($subjectOptions as $subject): ?><option value="<?= (int) $subject['id'] ?>" <?= $filterSubject === (int)$subject['id'] ? 'selected' : '' ?>><?= h($subject['subject_name']) ?> · <?= h($subject['subject_code']) ?></option><?php endforeach; ?></select>
-    <select name="status"><option value="">All statuses</option><option value="pending" <?= selected($filterStatus, 'pending') ?>>Pending</option><option value="reviewed" <?= selected($filterStatus, 'reviewed') ?>>Reviewed</option><option value="graded" <?= selected($filterStatus, 'graded') ?>>Graded</option></select>
-    <button class="btn btn-secondary" type="submit">Apply filters</button>
-  </form>
-  <div class="table-wrap teacher-submission-wrap">
-    <table class="teacher-submission-table">
-      <thead><tr class="submission-row-card"><th>Student / Project</th><th>Links</th><th>Demo access</th><th>Review</th><th>Actions</th></tr></thead>
-      <tbody>
-      <?php foreach ($rows as $row): ?>
-        <?php $passwordId = 'demo-pass-' . (int) $row['id']; ?>
-        <tr class="submission-row-card">
-          <td data-label="Student / Project">
-            <div class="submission-student-cell">
-              <div class="submission-student-head">
-                <strong><?= h($row['full_name']) ?></strong>
-                <?= status_badge($row['status']) ?>
-              </div>
-              <div class="submission-meta-stack">
-                <div class="muted small"><?= h($row['student_code']) ?> · <?= h($row['section_name']) ?></div>
-                <?php if (!empty($row['team_name'])): ?><div class="muted small">Team: <?= h($row['team_name']) ?></div><?php endif; ?>
-                <div class="submission-project-chip">
-                  <strong><?= h($row['assigned_system']) ?></strong>
-                  <span><?= h($row['subject_name']) ?> · <?= h($row['subject_code']) ?></span>
-                </div>
-              </div>
-            </div>
-          </td>
-          <td data-label="Links">
-            <div class="submission-link-stack">
-              <a class="submission-link-card" href="<?= h($row['project_url']) ?>" target="_blank" rel="noopener">
-                <span class="submission-link-label">Project URL</span>
-                <strong>Open live project</strong>
-                <span class="muted small"><?= h($row['project_url']) ?></span>
-              </a>
-              <?php if (!empty($row['video_url'])): ?>
-                <a class="submission-link-card soft" href="<?= h($row['video_url']) ?>" target="_blank" rel="noopener">
-                  <span class="submission-link-label">Video demo</span>
-                  <strong>Open walkthrough</strong>
-                  <span class="muted small"><?= h($row['video_url']) ?></span>
-                </a>
-              <?php else: ?>
-                <div class="table-note">No video walkthrough was provided for this submission.</div>
-              <?php endif; ?>
-            </div>
-          </td>
-          <td data-label="Demo access">
-            <?php if (has_demo_access($row)): ?>
-              <div class="access-card">
-                <div class="access-card-head">
-                  <strong>Demo login</strong>
-                  <span class="access-badge">Teacher-only</span>
-                </div>
-                <div class="credential-row">
-                  <span class="credential-label">Username</span>
-                  <code class="credential-value" data-copy-source><?= h($row['admin_username'] ?: '—') ?></code>
-                  <?php if (!empty($row['admin_username'])): ?>
-                    <button type="button" class="btn btn-outline credential-btn" data-copy-text="<?= h($row['admin_username']) ?>">Copy</button>
-                  <?php endif; ?>
-                </div>
-                <div class="credential-row">
-                  <span class="credential-label">Password</span>
-                  <code class="credential-value credential-secret<?= empty($row['admin_password']) ? ' code-muted' : '' ?>" id="<?= h($passwordId) ?>" data-secret="<?= h($row['admin_password']) ?>"><?= !empty($row['admin_password']) ? '••••••••' : '—' ?></code>
-                  <?php if (!empty($row['admin_password'])): ?>
-                    <button type="button" class="btn btn-outline credential-btn" data-toggle-secret="<?= h($passwordId) ?>">Show</button>
-                    <button type="button" class="btn btn-outline credential-btn" data-copy-text="<?= h($row['admin_password']) ?>">Copy</button>
-                  <?php endif; ?>
-                </div>
-              </div>
-            <?php else: ?>
-              <div class="table-note">No demo credentials were provided. Open the project link directly.</div>
-            <?php endif; ?>
-          </td>
-          <td data-label="Review">
-            <div class="review-card review-<?= h($row['status']) ?>">
-              <div class="review-card-head">
-                <strong><?= h(ucfirst($row['status'])) ?></strong>
-                <span class="review-grade">Grade: <?= h($row['grade'] ?: '—') ?></span>
-              </div>
-              <div class="review-card-copy muted small">
-                <?= $row['teacher_feedback'] ? h(mb_strimwidth($row['teacher_feedback'], 0, 96, '…')) : 'No feedback written yet.' ?>
-              </div>
-              <details class="quick-review" style="margin-top:10px;">
-                <summary class="btn btn-outline">Quick review</summary>
-                <form method="post" class="grid quick-review-form">
-                  <input type="hidden" name="_csrf" value="<?= h(csrf_token()) ?>">
-                  <input type="hidden" name="submission_id" value="<?= (int)$row['id'] ?>">
-                  <select name="status"><?php foreach (['pending','reviewed','graded'] as $s): ?><option value="<?= h($s) ?>" <?= $row['status']===$s?'selected':'' ?>><?= h(ucfirst($s)) ?></option><?php endforeach; ?></select>
-                  <input name="grade" value="<?= h($row['grade']) ?>" placeholder="Grade">
-                  <textarea name="teacher_feedback" placeholder="Feedback for the team"><?= h($row['teacher_feedback']) ?></textarea>
-                  <button class="btn btn-secondary" type="submit">Save review</button>
-                </form>
-              </details>
-            </div>
-          </td>
-          <td data-label="Actions">
-            <div class="table-actions submission-action-stack">
-              <a class="btn" href="<?= h(url('teacher/submission_view.php?id=' . (int) $row['id'])) ?>">Open workspace</a>
-              <a class="btn btn-outline" href="<?= h(url('teacher/print_submission.php?id=' . (int) $row['id'])) ?>" target="_blank">Print</a>
-            </div>
-          </td>
-        </tr>
-      <?php endforeach; ?>
-      <?php if (!$rows): ?><tr class="submission-row-card"><td colspan="5" class="empty-state">No submissions matched your current filters.</td></tr><?php endif; ?>
-      </tbody>
-    </table>
-  </div>
-</div>
+<div class="kpi-grid"><div class="kpi-card"><span class="label">Visible</span><strong><?= (int) $summary['total'] ?></strong><span class="muted small">Assigned submissions only</span></div><div class="kpi-card"><span class="label">Pending</span><strong><?= (int) $summary['pending'] ?></strong><span class="muted small">Needs first review</span></div><div class="kpi-card"><span class="label">Reviewed</span><strong><?= (int) $summary['reviewed'] ?></strong><span class="muted small">Seen but not finalized</span></div><div class="kpi-card"><span class="label">Graded</span><strong><?= (int) $summary['graded'] ?></strong><span class="muted small">Ready for students</span></div></div>
+<section class="table-card table-bootstrap-shell"><div class="module-header"><div><div class="eyebrow">Teacher Review</div><h3 class="mb-1">Submission Review Table</h3><p class="muted mb-0">Only submissions from subjects directly assigned to you are shown here.</p></div><div class="module-actions"><span class="badge-soft"><i class="bi bi-table"></i> <?= count($rows) ?> rows</span></div></div><div class="table-toolbar"><form method="get" class="filters"><select class="form-select" name="subject_id"><option value="0">All my subjects</option><?php foreach ($subjectOptions as $subject): ?><option value="<?= (int) $subject['id'] ?>" <?= $filterSubject === (int) $subject['id'] ? 'selected' : '' ?>><?= h($subject['subject_name']) ?></option><?php endforeach; ?></select><select class="form-select" name="status"><option value="">All statuses</option><option value="pending" <?= selected($filterStatus, 'pending') ?>>Pending</option><option value="reviewed" <?= selected($filterStatus, 'reviewed') ?>>Reviewed</option><option value="graded" <?= selected($filterStatus, 'graded') ?>>Graded</option></select><button class="btn" type="submit"><i class="bi bi-funnel"></i> Apply Filters</button></form></div><div class="table-responsive"><table class="table table-hover align-middle"><thead><tr><th>Student</th><th>Subject</th><th>Project</th><th>Status</th><th class="text-end">Actions</th></tr></thead><tbody><?php foreach ($rows as $row): ?><tr><td><strong><?= h($row['full_name']) ?></strong><div class="muted small"><?= h($row['student_code']) ?> · <?= h($row['section_name']) ?></div><?php if (!empty($row['team_name'])): ?><div class="muted small"><?= h($row['team_name']) ?></div><?php endif; ?></td><td><strong><?= h($row['subject_name']) ?></strong><div class="muted small"><?= h($row['subject_code']) ?></div></td><td><strong><?= h($row['assigned_system']) ?></strong><div class="muted small">Submitted <?= h($row['submitted_at']) ?></div></td><td><?= status_badge($row['status']) ?><div class="muted small mt-1">Grade <?= h($row['grade'] ?: '—') ?></div></td><td class="text-end"><div class="icon-action-group justify-content-end"><a class="icon-action" href="<?= h(url('teacher/submission_view.php?id=' . (int) $row['id'])) ?>" title="Open submission"><i class="bi bi-eye"></i></a><button class="icon-action" type="button" data-open-modal="teacher-review-<?= (int) $row['id'] ?>" title="Quick review"><i class="bi bi-pencil-square"></i></button></div></td></tr><?php endforeach; ?><?php if (!$rows): ?><tr><td colspan="5" class="table-empty">No submissions matched your current filters.</td></tr><?php endif; ?></tbody></table></div></section>
+<?php foreach ($rows as $row): ?><div class="modal-backdrop" data-modal="teacher-review-<?= (int) $row['id'] ?>" aria-hidden="true"><div class="modal-card" role="dialog" aria-modal="true"><div class="modal-head"><div><span class="badge-soft"><i class="bi bi-pencil-square"></i> Quick Review</span><h3><?= h($row['assigned_system']) ?></h3><p class="muted mb-0"><?= h($row['full_name']) ?> · <?= h($row['subject_name']) ?></p></div><button type="button" class="icon-btn modal-close" data-close-modal aria-label="Close">✕</button></div><form method="post" class="form-modal-grid"><input type="hidden" name="_csrf" value="<?= h(csrf_token()) ?>"><input type="hidden" name="submission_id" value="<?= (int) $row['id'] ?>"><div><label>Status</label><select class="form-select" name="status"><?php foreach (['pending','reviewed','graded'] as $s): ?><option value="<?= h($s) ?>" <?= $row['status']===$s?'selected':'' ?>><?= h(ucfirst($s)) ?></option><?php endforeach; ?></select></div><div><label>Grade</label><input class="form-control" name="grade" value="<?= h((string)$row['grade']) ?>" placeholder="Grade"></div><div class="full"><label>Feedback</label><textarea class="form-control" name="teacher_feedback" rows="4" placeholder="Feedback for the team"><?= h((string)$row['teacher_feedback']) ?></textarea></div><div class="full d-flex justify-content-end gap-2"><button class="btn btn-outline" type="button" data-close-modal>Cancel</button><button class="btn" type="submit">Save review</button></div></form></div></div><?php endforeach; ?>
 <?php require_once __DIR__ . '/../backend/partials/footer.php'; ?>

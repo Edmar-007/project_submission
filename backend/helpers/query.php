@@ -20,7 +20,13 @@ function all_subjects(): array {
 function student_subjects(int $sectionId): array {
     $stmt = pdo()->prepare('SELECT subj.*, t.full_name AS teacher_name FROM section_subjects ss JOIN subjects subj ON subj.id = ss.subject_id JOIN teachers t ON t.id = subj.teacher_id WHERE ss.section_id = ? AND subj.status = "active" ORDER BY subj.subject_name');
     $stmt->execute([$sectionId]);
-    return $stmt->fetchAll();
+        $rows = $stmt->fetchAll();
+    foreach ($rows as &$row) {
+        $row['deadline_window'] = subject_deadline_window($row);
+        $row['submission_locked'] = student_subject_locked($row);
+    }
+    unset($row);
+    return $rows;
 }
 
 function fetch_notifications(string $userType, int $userId, int $limit = 5): array {
@@ -76,6 +82,10 @@ function fetch_subject_detail(int $subjectId): ?array {
     $stmt = pdo()->prepare('SELECT subj.*, t.full_name AS teacher_name, t.email AS teacher_email, sy.label AS school_year, sem.name AS semester FROM subjects subj JOIN teachers t ON t.id = subj.teacher_id JOIN school_years sy ON sy.id = subj.school_year_id JOIN semesters sem ON sem.id = subj.semester_id WHERE subj.id = ? LIMIT 1');
     $stmt->execute([$subjectId]);
     $subject = $stmt->fetch();
+    if ($subject) {
+        $subject['deadline_window'] = subject_deadline_window($subject);
+        $subject['submission_locked'] = student_subject_locked($subject);
+    }
     return $subject ?: null;
 }
 
@@ -210,4 +220,29 @@ function send_student_activation_invite(array $student, string $token, string $i
 " .
         APP_NAME;
     send_system_mail($student['email'], 'Activate your student portal account', $body);
+}
+
+
+function student_subject_locked(array $subject): bool {
+    $window = $subject['deadline_window'] ?? subject_deadline_window($subject);
+    return ($window['state'] ?? 'open') === 'locked';
+}
+
+function format_deadline_for_input(?string $value): string {
+    if (!$value) {
+        return '';
+    }
+    try {
+        return (new DateTimeImmutable($value))->format('Y-m-d\TH:i');
+    } catch (Throwable $e) {
+        return '';
+    }
+}
+
+function deadline_badge_html(array $subject): string {
+    $window = $subject['deadline_window'] ?? subject_deadline_window($subject);
+    $state = $window['state'] ?? 'open';
+    $classMap = ['open' => 'success', 'warning' => 'warning', 'locked' => 'danger', 'reopened' => 'info'];
+    $class = $classMap[$state] ?? 'neutral';
+    return '<span class="status ' . h($class) . '">' . h($window['label'] ?? 'No deadline set') . '</span>';
 }
