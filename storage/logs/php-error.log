@@ -1,0 +1,37 @@
+[11-Apr-2026 23:46:00 Europe/Berlin] PHP Fatal error:  Maximum execution time of 120 seconds exceeded in C:\xampp\htdocs\project_submission\backend\config\db.php on line 25
+[11-Apr-2026 22:52:15 UTC] PHP Fatal error:  Uncaught PDOException: PDO::__construct(): Premature end of data (mysqlnd_wireprotocol.c:380) in C:\laragon\www\project_submission\backend\config\db.php:25
+Stack trace:
+#0 C:\laragon\www\project_submission\backend\config\db.php(25): PDO->__construct('mysql:host=127....', 'root', Object(SensitiveParameterValue), Array)
+#1 C:\laragon\www\project_submission\backend\helpers\query.php(9): pdo()
+#2 C:\laragon\www\project_submission\backend\helpers\query.php(119): ensure_submission_activity_schema()
+#3 C:\laragon\www\project_submission\backend\config\app.php(69): require_once('C:\\laragon\\www\\...')
+#4 C:\laragon\www\project_submission\index.php(5): require_once('C:\\laragon\\www\\...')
+#5 {main}
+
+Next PDOException: SQLSTATE[HY000] [2002] Unknown error while trying to connect via tcp://127.0.0.1:33060 in C:\laragon\www\project_submission\backend\config\db.php:25
+Stack trace:
+#0 C:\laragon\www\project_submission\backend\config\db.php(25): PDO->__construct('mysql:host=127....', 'root', Object(SensitiveParameterValue), Array)
+#1 C:\laragon\www\project_submission\backend\helpers\query.php(9): pdo()
+#2 C:\laragon\www\project_submission\backend\helpers\query.php(119): ensure_submission_activity_schema()
+#3 C:\laragon\www\project_submission\backend\config\app.php(69): require_once('C:\\laragon\\www\\...')
+#4 C:\laragon\www\project_submission\index.php(5): require_once('C:\\laragon\\www\\...')
+#5 {main}
+  thrown in C:\laragon\www\project_submission\backend\config\db.php on line 25
+[11-Apr-2026 22:52:46 UTC] PHP Fatal error:  Uncaught PDOException: PDO::__construct(): Premature end of data (mysqlnd_wireprotocol.c:380) in C:\laragon\www\project_submission\backend\config\db.php:25
+Stack trace:
+#0 C:\laragon\www\project_submission\backend\config\db.php(25): PDO->__construct('mysql:host=127....', 'root', Object(SensitiveParameterValue), Array)
+#1 C:\laragon\www\project_submission\backend\helpers\query.php(9): pdo()
+#2 C:\laragon\www\project_submission\backend\helpers\query.php(119): ensure_submission_activity_schema()
+#3 C:\laragon\www\project_submission\backend\config\app.php(69): require_once('C:\\laragon\\www\\...')
+#4 C:\laragon\www\project_submission\admin\login.php(5): require_once('C:\\laragon\\www\\...')
+#5 {main}
+
+Next PDOException: SQLSTATE[HY000] [2002] Unknown error while trying to connect via tcp://127.0.0.1:33060 in C:\laragon\www\project_submission\backend\config\db.php:25
+Stack trace:
+#0 C:\laragon\www\project_submission\backend\config\db.php(25): PDO->__construct('mysql:host=127....', 'root', Object(SensitiveParameterValue), Array)
+#1 C:\laragon\www\project_submission\backend\helpers\query.php(9): pdo()
+#2 C:\laragon\www\project_submission\backend\helpers\query.php(119): ensure_submission_activity_schema()
+#3 C:\laragon\www\project_submission\backend\config\app.php(69): require_once('C:\\laragon\\www\\...')
+#4 C:\laragon\www\project_submission\admin\login.php(5): require_once('C:\\laragon\\www\\...')
+#5 {main}
+  thrown in C:\laragon\www\project_submission\backend\config\db.php on line 25

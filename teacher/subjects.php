@@ -1,0 +1,377 @@
+<?php
+if (defined('FILE_TEACHER_SUBJECTS_PHP_LOADED')) { return; }
+define('FILE_TEACHER_SUBJECTS_PHP_LOADED', true);
+
+require_once __DIR__ . '/../backend/config/app.php';
+require_role('teacher');
+$teacher = current_user();
+$pdo = pdo();
+$sections = available_subject_sections();
+$allowedSectionIds = array_map(static fn(array $section): int => (int) $section['id'], $sections);
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf();
+    $action = $_POST['action'] ?? '';
+
+    if ($action === 'save_subject') {
+        $subjectId = (int) ($_POST['subject_id'] ?? 0);
+        $code = trim($_POST['subject_code'] ?? '');
+        $name = trim($_POST['subject_name'] ?? '');
+        $description = trim($_POST['description'] ?? '');
+        $status = trim($_POST['status'] ?? 'active');
+        if (!in_array($status, ['active', 'inactive', 'archived'], true)) {
+            $status = 'active';
+        }
+        $rawSectionIds = is_array($_POST['section_ids'] ?? null) ? $_POST['section_ids'] : [];
+        $sectionIds = array_values(array_unique(array_filter(array_map('intval', $rawSectionIds), static fn(int $id): bool => $id > 0 && in_array($id, $allowedSectionIds, true))));
+        $schoolYearId = active_school_year_id();
+        $semesterId = active_semester_id($schoolYearId);
+
+        if ($code === '' || $name === '' || !$schoolYearId || !$semesterId) {
+            set_flash('error', 'Subject code, subject name, and an active academic term are required.');
+            redirect_to('teacher/subjects.php');
+        }
+        if (!$sectionIds) {
+            set_flash('error', 'Select at least one section for this subject.');
+            redirect_to('teacher/subjects.php');
+        }
+
+        try {
+            $pdo->beginTransaction();
+            if ($subjectId > 0) {
+                $ownershipStmt = $pdo->prepare('SELECT id FROM subjects WHERE id = ? AND teacher_id = ? LIMIT 1');
+                $ownershipStmt->execute([$subjectId, (int) $teacher['id']]);
+                if (!$ownershipStmt->fetchColumn()) {
+                    throw new RuntimeException('Subject not found.');
+                }
+
+                $stmt = $pdo->prepare('UPDATE subjects SET subject_code = ?, subject_name = ?, description = ?, status = ? WHERE id = ? AND teacher_id = ?');
+                $stmt->execute([$code, $name, $description ?: null, $status, $subjectId, (int) $teacher['id']]);
+                $pdo->prepare('DELETE FROM section_subjects WHERE subject_id = ?')->execute([$subjectId]);
+                $message = 'Subject updated successfully.';
+            } else {
+                $stmt = $pdo->prepare('INSERT INTO subjects (subject_code, subject_name, description, teacher_id, school_year_id, semester_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)');
+                $stmt->execute([$code, $name, $description ?: null, (int) $teacher['id'], $schoolYearId, $semesterId, $status]);
+                $subjectId = (int) $pdo->lastInsertId();
+                $message = 'Subject created successfully.';
+            }
+
+            $mapStmt = $pdo->prepare('INSERT INTO section_subjects (section_id, subject_id) VALUES (?, ?)');
+            foreach ($sectionIds as $sectionId) {
+                if ($sectionId > 0) {
+                    $mapStmt->execute([$sectionId, $subjectId]);
+                }
+            }
+            log_action('teacher', (int) $teacher['id'], $action === 'save_subject' && (int) ($_POST['subject_id'] ?? 0) > 0 ? 'subject_update' : 'subject_create', 'subject', $subjectId, $name);
+            $pdo->commit();
+            set_flash('success', $message);
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) { $pdo->rollBack(); }
+            $message = 'Unable to save subject right now.';
+            if ($e instanceof PDOException && (string) $e->getCode() === '23000') {
+                $message = 'That subject code is already in use for the current term. Please use a different code.';
+            }
+            set_flash('error', $message);
+        }
+        redirect_to('teacher/subjects.php');
+    }
+
+    if ($action === 'archive_subject') {
+        $subjectId = (int) ($_POST['subject_id'] ?? 0);
+        $stmt = $pdo->prepare('UPDATE subjects SET status = "archived" WHERE id = ? AND teacher_id = ?');
+        $stmt->execute([$subjectId, (int) $teacher['id']]);
+        log_action('teacher', (int) $teacher['id'], 'subject_archive', 'subject', $subjectId, 'Archived subject from teacher workspace');
+        set_flash('success', 'Subject archived.');
+        redirect_to('teacher/subjects.php');
+    }
+
+    if ($action === 'quick_create_activity') {
+      $sId = (int) ($_POST['subject_id'] ?? 0);
+      $ownership = $pdo->prepare('SELECT id FROM subjects WHERE id = ? AND teacher_id = ? LIMIT 1');
+      $ownership->execute([$sId, (int) $teacher['id']]);
+      if (!$ownership->fetchColumn()) {
+        set_flash('error', 'Subject not found.');
+        redirect_to('teacher/subjects.php');
+      }
+      $titleValue = trim($_POST['title'] ?? '');
+      if ($titleValue === '') {
+        set_flash('error', 'Activity title is required.');
+        redirect_to('teacher/subjects.php');
+      }
+      $description = trim($_POST['description'] ?? '') ?: null;
+      $deadlineAt = trim($_POST['deadline_at'] ?? '') ?: null;
+      $allowLate = isset($_POST['allow_late']) ? 1 : 0;
+      $lateUntil = trim($_POST['late_until'] ?? '') ?: null;
+      $submissionMode = (($_POST['submission_mode'] ?? 'team') === 'individual') ? 'individual' : 'team';
+      $minMembers = max(1, (int) ($_POST['min_members'] ?? 1));
+      $maxMembers = max($minMembers, (int) ($_POST['max_members'] ?? max(3, $minMembers)));
+      $allowResubmission = isset($_POST['allow_resubmission']) ? 1 : 0;
+      $maxResubmissions = max(1, (int) ($_POST['max_resubmissions'] ?? 1));
+      $requireRepository = isset($_POST['require_repository']) ? 1 : 0;
+      $requireLiveUrl = isset($_POST['require_live_url']) ? 1 : 0;
+      $requireFile = isset($_POST['require_file']) ? 1 : 0;
+
+      $pdo->beginTransaction();
+      try {
+        $pdo->prepare('INSERT INTO submission_activities (subject_id, title, description, status, opens_at, deadline_at, allow_late, late_until, submission_mode, min_members, max_members, allow_resubmission, max_resubmissions, require_file, require_repository, require_live_url, require_demo_access, require_notes, created_by_teacher_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')->execute([
+          $sId, $titleValue, $description, 'published', null, $deadlineAt, $allowLate, $lateUntil, $submissionMode, $minMembers, $maxMembers, $allowResubmission, $maxResubmissions, $requireFile, $requireRepository, $requireLiveUrl, 0, 0, (int) $teacher['id']
+        ]);
+        $activityId = (int) $pdo->lastInsertId();
+        $mappedSectionsStmt = $pdo->prepare('SELECT section_id FROM section_subjects WHERE subject_id = ?');
+        $mappedSectionsStmt->execute([$sId]);
+        $mappedSections = array_map('intval', array_column($mappedSectionsStmt->fetchAll(), 'section_id'));
+        if ($mappedSections) {
+          $mapStmt = $pdo->prepare('INSERT INTO submission_activity_sections (activity_id, section_id) VALUES (?, ?)');
+          foreach ($mappedSections as $mappedSectionId) {
+            $mapStmt->execute([$activityId, $mappedSectionId]);
+          }
+        }
+        $pdo->commit();
+        set_flash('success', 'Submission activity created.');
+      } catch (Throwable $e) {
+        if ($pdo->inTransaction()) { $pdo->rollBack(); }
+        set_flash('error', 'Unable to create submission activity right now.');
+      }
+      redirect_to('teacher/subjects.php');
+    }
+}
+
+$stmt = $pdo->prepare('SELECT subj.*, GROUP_CONCAT(sec.section_name ORDER BY sec.section_name SEPARATOR ", ") AS sections, COUNT(DISTINCT ss.section_id) AS total_sections, COUNT(DISTINCT sub.id) AS total_submissions, COUNT(DISTINCT sr.id) AS total_resources, COUNT(DISTINCT act.id) AS total_activities, MIN(CASE WHEN act.status = "published" AND act.deadline_at IS NOT NULL THEN act.deadline_at END) AS next_activity_deadline FROM subjects subj LEFT JOIN section_subjects ss ON ss.subject_id = subj.id LEFT JOIN sections sec ON sec.id = ss.section_id LEFT JOIN submissions sub ON sub.subject_id = subj.id LEFT JOIN subject_resources sr ON sr.subject_id = subj.id LEFT JOIN submission_activities act ON act.subject_id = subj.id WHERE subj.teacher_id = ? GROUP BY subj.id ORDER BY FIELD(subj.status, "active", "inactive", "archived"), subj.subject_name');
+$stmt->execute([(int) $teacher['id']]);
+$subjects = $stmt->fetchAll();
+
+$sectionMapStmt = $pdo->prepare('SELECT subject_id, section_id FROM section_subjects WHERE subject_id IN (SELECT id FROM subjects WHERE teacher_id = ?)');
+$sectionMapStmt->execute([(int) $teacher['id']]);
+$sectionMap = [];
+foreach ($sectionMapStmt->fetchAll() as $row) {
+    $sectionMap[(int) $row['subject_id']][] = (int) $row['section_id'];
+}
+
+$activeCount = count(array_filter($subjects, fn($row) => ($row['status'] ?? '') === 'active'));
+$archivedCount = count(array_filter($subjects, fn($row) => ($row['status'] ?? '') === 'archived'));
+$submissionTotal = array_sum(array_map(fn($row) => (int) $row['total_submissions'], $subjects));
+$subjectBadgeClass = static function (string $status): string {
+    $key = strtolower(trim($status));
+    if ($key === 'active') return 'ui-badge--open';
+    if ($key === 'inactive') return 'ui-badge--warning';
+    if ($key === 'archived') return 'ui-badge--muted';
+    return 'ui-badge--open';
+};
+$title = 'Teacher Subjects';
+$subtitle = 'Create, assign, update, and archive multi-section subjects from one workspace';
+require_once __DIR__ . '/../backend/partials/header.php';
+?>
+<div class="kpi-grid ui-stat-grid">
+  <div class="kpi-card ui-stat-card"><span class="label ui-stat-card__label">Subjects</span><strong class="ui-stat-card__value"><?= count($subjects) ?></strong><span class="muted small ui-stat-card__hint">Owned by your account</span></div>
+  <div class="kpi-card ui-stat-card"><span class="label ui-stat-card__label">Active</span><strong class="ui-stat-card__value"><?= $activeCount ?></strong><span class="muted small ui-stat-card__hint">Currently visible to students</span></div>
+  <div class="kpi-card ui-stat-card"><span class="label ui-stat-card__label">Archived</span><strong class="ui-stat-card__value"><?= $archivedCount ?></strong><span class="muted small ui-stat-card__hint">Hidden from the main flow</span></div>
+  <div class="kpi-card ui-stat-card"><span class="label ui-stat-card__label">Submissions</span><strong class="ui-stat-card__value"><?= $submissionTotal ?></strong><span class="muted small ui-stat-card__hint">Across all your subjects</span></div>
+</div>
+
+<section class="workspace-shell ui-section">
+  <div class="workspace-head ui-section__head">
+    <div>
+      <div class="eyebrow ui-section__eyebrow">Teacher Subject Workspace</div>
+      <h2 class="ui-section__title">Manage subject cards instead of a table-first flow</h2>
+      <p class="muted ui-section__desc">Create a subject, assign one or many sections, reopen it later for edits, or archive it when the term is complete.</p>
+    </div>
+    <div class="form-actions ui-action-row"><button class="btn ui-btn ui-btn--primary" type="button" data-open-modal="subject-create-modal">Create subject</button></div>
+  </div>
+
+  <div class="subject-workspace-grid">
+    <?php foreach ($subjects as $subject): ?>
+      <?php $locked = !empty($subject['teacher_submission_locked']); ?>
+      <article class="card subject-workspace-card ui-subject-card">
+        <div class="split-header ui-subject-card__top">
+          <div>
+            <h3 class="section-title ui-subject-card__title"><?= h($subject['subject_name']) ?></h3>
+            <div class="muted small ui-subject-card__meta"><?= h($subject['subject_code']) ?> · <?= h($subject['sections'] ?: 'No sections assigned') ?></div>
+          </div>
+          <span class="ui-badge <?= h($subjectBadgeClass((string) ($subject['status'] ?? ''))) ?>"><?= h(ucfirst((string) $subject['status'])) ?></span>
+        </div>
+        <p class="muted ui-subject-card__desc"><?= h($subject['description'] ?: 'No description provided yet.') ?></p>
+        <div class="workspace-stat-grid">
+          <div class="segment"><span class="muted small">Sections</span><strong><?= (int) $subject['total_sections'] ?></strong></div>
+          <div class="segment"><span class="muted small">Submissions</span><strong><?= (int) $subject['total_submissions'] ?></strong></div>
+          <div class="segment"><span class="muted small">Activities</span><strong><?= (int) $subject['total_activities'] ?></strong></div><div class="segment"><span class="muted small">Resources</span><strong><?= (int) $subject['total_resources'] ?></strong></div>
+        </div>
+        <div class="ui-chip-row" style="margin-top:12px;"><?= deadline_badge_html($subject) ?></div>
+        <?php if ($locked): ?><div class="callout" style="margin-top:12px;"><strong>Manual lock active.</strong><div class="muted small"><?= h($subject['teacher_submission_lock_note'] ?: 'Teacher closed submissions for this subject.') ?></div></div><?php endif; ?>
+        <div class="form-actions ui-action-row" style="margin-top:16px;">
+          <a class="btn btn-secondary ui-btn ui-btn--primary" href="<?= h(url('teacher/subject_view.php?id=' . (int) $subject['id'])) ?>">Open workspace</a>
+          <button class="btn ui-btn ui-btn--secondary" type="button" data-open-modal="create-activity-<?= (int) $subject['id'] ?>">Add activity</button>
+          <button class="btn btn-outline ui-btn ui-btn--ghost" type="button" data-open-modal="subject-edit-<?= (int) $subject['id'] ?>">Edit</button>
+          <?php if (($subject['status'] ?? '') !== 'archived'): ?>
+            <form method="post" class="inline">
+              <input type="hidden" name="_csrf" value="<?= h(csrf_token()) ?>">
+              <input type="hidden" name="action" value="archive_subject">
+              <input type="hidden" name="subject_id" value="<?= (int) $subject['id'] ?>">
+              <button class="btn btn-ghost ui-btn ui-btn--danger" type="submit" data-confirm-title="Archive subject?" data-confirm-message="This hides the subject from normal teacher and student workflows, but keeps its history.">Archive</button>
+            </form>
+          <?php endif; ?>
+        </div>
+      </article>
+    <?php endforeach; ?>
+    <?php if (!$subjects): ?><div class="ui-empty-state"><div class="ui-empty-state__icon">○</div><h3 class="ui-empty-state__title">No subjects yet</h3><p class="ui-empty-state__text">Create your first subject to start assigning sections and collecting submissions.</p></div><?php endif; ?>
+  </div>
+</section>
+
+<div class="modal-backdrop" data-modal="subject-create-modal" aria-hidden="true">
+  <div class="modal-card modal-lg subject-modal-card" role="dialog" aria-modal="true" aria-labelledby="subject-create-title">
+    <div class="modal-head">
+      <div>
+        <span class="pill soft">Create subject</span>
+        <h3 id="subject-create-title">New subject</h3>
+        <p class="muted">Create the subject, set its visibility, and assign one or many sections in one clean flow.</p>
+      </div>
+      <button type="button" class="icon-btn modal-close" data-close-modal aria-label="Close create subject modal">✕</button>
+    </div>
+    <form method="post" class="form-grid modal-form-shell" data-modal-form="subject">
+      <input type="hidden" name="_csrf" value="<?= h(csrf_token()) ?>">
+      <input type="hidden" name="action" value="save_subject">
+      <div class="full modal-section-card modal-section-intro">
+        <div>
+          <strong>Subject setup</strong>
+          <p class="muted small">Use a short subject code, a clear title, and pick every section that should see this subject.</p>
+        </div>
+        <span class="pill soft"><?= count($sections) ?> section<?= count($sections) === 1 ? '' : 's' ?> available</span>
+      </div>
+      <div><label>Subject code</label><input name="subject_code" placeholder="Example: IM101" required></div>
+      <div><label>Subject name</label><input name="subject_name" placeholder="Example: Information Management" required></div>
+      <div class="full"><label>Description</label><textarea name="description" rows="5" placeholder="Describe the subject goals, expected outputs, or class requirements"></textarea></div>
+      <div><label>Status</label><select name="status"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+      <div class="full modal-section-card">
+        <div class="modal-section-heading">
+          <div>
+            <strong>Assigned sections</strong>
+            <p class="muted small">Students only see this subject if their section is selected here.</p>
+          </div>
+        </div>
+        <div class="checkbox-grid"><?php foreach ($sections as $section): ?><label class="checkbox-card"><input type="checkbox" name="section_ids[]" value="<?= (int) $section['id'] ?>"> <span><strong><?= h($section['section_name']) ?></strong><small><?= h(($section['school_year'] ?? '') . ' · ' . ($section['semester'] ?? '')) ?></small></span></label><?php endforeach; ?></div>
+      </div>
+      <div class="full form-actions modal-form-actions"><button class="btn" type="submit">Save subject</button><button class="btn btn-outline" type="button" data-close-modal>Cancel</button></div>
+    </form>
+  </div>
+</div>
+
+<?php foreach ($subjects as $subject): ?>
+<div class="modal-backdrop" data-modal="subject-edit-<?= (int) $subject['id'] ?>" aria-hidden="true">
+  <div class="modal-card modal-lg subject-modal-card" role="dialog" aria-modal="true" aria-labelledby="subject-edit-title-<?= (int) $subject['id'] ?>">
+    <div class="modal-head">
+      <div>
+        <span class="pill soft">Edit subject</span>
+        <h3 id="subject-edit-title-<?= (int) $subject['id'] ?>"><?= h($subject['subject_name']) ?></h3>
+        <p class="muted">Update details, visibility, and section mapping without leaving the workspace.</p>
+      </div>
+      <button type="button" class="icon-btn modal-close" data-close-modal aria-label="Close edit subject modal">✕</button>
+    </div>
+    <form method="post" class="form-grid modal-form-shell" data-modal-form="subject">
+      <input type="hidden" name="_csrf" value="<?= h(csrf_token()) ?>">
+      <input type="hidden" name="action" value="save_subject">
+      <input type="hidden" name="subject_id" value="<?= (int) $subject['id'] ?>">
+      <div class="full modal-section-card modal-section-intro">
+        <div>
+          <strong>Subject status</strong>
+          <p class="muted small">Keep the subject active for students, mark it inactive temporarily, or archive it when the term is finished.</p>
+        </div>
+        <?= status_badge($subject['status']) ?>
+      </div>
+      <div><label>Subject code</label><input name="subject_code" required value="<?= h($subject['subject_code']) ?>"></div>
+      <div><label>Subject name</label><input name="subject_name" required value="<?= h($subject['subject_name']) ?>"></div>
+      <div class="full"><label>Description</label><textarea name="description" rows="5"><?= h($subject['description']) ?></textarea></div>
+      <div><label>Status</label><select name="status"><option value="active" <?= selected($subject['status'], 'active') ?>>Active</option><option value="inactive" <?= selected($subject['status'], 'inactive') ?>>Inactive</option><option value="archived" <?= selected($subject['status'], 'archived') ?>>Archived</option></select></div>
+      <div class="full modal-section-card">
+        <div class="modal-section-heading">
+          <div>
+            <strong>Assigned sections</strong>
+            <p class="muted small">Update the section list any time. Only checked sections can access this subject.</p>
+          </div>
+        </div>
+        <div class="checkbox-grid"><?php foreach ($sections as $section): ?><label class="checkbox-card"><input type="checkbox" name="section_ids[]" value="<?= (int) $section['id'] ?>" <?= in_array((int) $section['id'], $sectionMap[(int) $subject['id']] ?? [], true) ? 'checked' : '' ?>> <span><strong><?= h($section['section_name']) ?></strong><small><?= h(($section['school_year'] ?? '') . ' · ' . ($section['semester'] ?? '')) ?></small></span></label><?php endforeach; ?></div>
+      </div>
+      <div class="full form-actions modal-form-actions"><button class="btn" type="submit">Update subject</button><button class="btn btn-outline" type="button" data-close-modal>Cancel</button></div>
+    </form>
+  </div>
+</div>
+  <div class="modal-backdrop" data-modal="create-activity-<?= (int) $subject['id'] ?>" aria-hidden="true">
+    <div class="modal-overlay"></div>
+    <div class="modal-container" role="dialog" aria-modal="true" aria-labelledby="create-activity-title-<?= (int) $subject['id'] ?>">
+      <div class="modal-card">
+        <div class="modal-head">
+          <div>
+            <span class="pill soft">New submission</span>
+            <h3 id="create-activity-title-<?= (int) $subject['id'] ?>">Quick create — <?= h($subject['subject_name']) ?></h3>
+            <p class="muted">Create a focused submission checkpoint. You can refine restrictions in the subject workspace afterwards.</p>
+          </div>
+          <button type="button" class="icon-btn modal-close" data-close-modal aria-label="Close create activity modal">✕</button>
+        </div>
+
+        <form id="quick-create-activity-<?= (int) $subject['id'] ?>" method="post" class="modal-body" novalidate>
+          <input type="hidden" name="_csrf" value="<?= h(csrf_token()) ?>">
+          <input type="hidden" name="action" value="quick_create_activity">
+          <input type="hidden" name="subject_id" value="<?= (int) $subject['id'] ?>">
+
+          <div class="form-grid" style="grid-template-columns: 1fr;">
+            <div>
+              <label>Title</label>
+              <input name="title" placeholder="Proposal submission" required data-modal-focus>
+              <div class="small muted" style="margin-top:6px;">Short, descriptive title students will see (e.g., Proposal, Demo, Final Upload).</div>
+            </div>
+
+            <div class="full">
+              <label>Description</label>
+              <textarea name="description" placeholder="Optional instructions or notes" rows="4"></textarea>
+            </div>
+
+            <div class="quick-grid">
+              <div>
+                <label>Deadline</label>
+                <input type="datetime-local" name="deadline_at">
+                <div class="small muted">Leave empty for no deadline.</div>
+              </div>
+              <div>
+                <label>Submission mode</label>
+                <select name="submission_mode"><option value="team">Team</option><option value="individual">Individual</option></select>
+              </div>
+            </div>
+
+            <div class="quick-grid">
+              <div>
+                <label>Min members</label>
+                <input type="number" name="min_members" min="1" value="1">
+              </div>
+              <div>
+                <label>Max members</label>
+                <input type="number" name="max_members" min="1" value="5">
+              </div>
+              <div>
+                <label>Max resubmissions</label>
+                <input type="number" name="max_resubmissions" min="1" value="1">
+              </div>
+            </div>
+
+            <div class="full">
+              <label class="section-title">Restrictions</label>
+              <div class="checkbox-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:8px;">
+                <label class="checkbox-card"><input type="checkbox" name="allow_late" value="1"> <span>Allow late submissions</span></label>
+                <label class="checkbox-card"><input type="checkbox" name="allow_resubmission" value="1"> <span>Allow resubmission</span></label>
+                <label class="checkbox-card"><input type="checkbox" name="require_repository" value="1" checked> <span>Require repository/project link</span></label>
+                <label class="checkbox-card"><input type="checkbox" name="require_live_url" value="1" checked> <span>Require live/demo URL</span></label>
+                <label class="checkbox-card"><input type="checkbox" name="require_file" value="1"> <span>Require file upload</span></label>
+              </div>
+              <div class="small muted" style="margin-top:8px;">After the deadline submissions are disabled for students. Teachers can lift restrictions or unlock the activity from the subject workspace.</div>
+            </div>
+          </div>
+        </form>
+
+        <div class="modal-footer">
+          <div class="modal-actions">
+            <button class="btn" type="submit" form="quick-create-activity-<?= (int) $subject['id'] ?>">Create submission</button>
+            <button class="btn btn-outline" type="button" data-close-modal>Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+<?php endforeach; ?>
+<?php require_once __DIR__ . '/../backend/partials/footer.php'; ?>

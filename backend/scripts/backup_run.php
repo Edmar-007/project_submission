@@ -1,0 +1,9 @@
+<?php
+if (defined('FILE_BACKEND_SCRIPTS_BACKUP_RUN_PHP_LOADED')) { return; }
+define('FILE_BACKEND_SCRIPTS_BACKUP_RUN_PHP_LOADED', true);
+
+require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../helpers/uploads.php';
+require_once __DIR__ . '/../helpers/backup.php';
+$result = backup_make_zip(null);
+echo "Created backup: {$result['zip_path']}\n";
