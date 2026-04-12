@@ -1,0 +1,535 @@
+﻿Function: url
+C:\laragon\www\project_submission\backend\config\app.php
+C:\laragon\www\project_submission\project\backend\config\app.php
+
+Function: url_for
+C:\laragon\www\project_submission\backend\config\app.php
+C:\laragon\www\project_submission\project\backend\config\app.php
+
+Function: asset_url
+C:\laragon\www\project_submission\backend\config\app.php
+C:\laragon\www\project_submission\project\backend\config\app.php
+
+Function: page_title
+C:\laragon\www\project_submission\backend\config\app.php
+C:\laragon\www\project_submission\project\backend\config\app.php
+
+Function: h
+C:\laragon\www\project_submission\backend\config\app.php
+C:\laragon\www\project_submission\backend\helpers\security.php
+C:\laragon\www\project_submission\project\backend\config\app.php
+
+Function: normalize_public_url
+C:\laragon\www\project_submission\backend\config\app.php
+C:\laragon\www\project_submission\project\backend\config\app.php
+
+Function: safe_public_url
+C:\laragon\www\project_submission\backend\config\app.php
+C:\laragon\www\project_submission\project\backend\config\app.php
+
+Function: current_portal_role
+C:\laragon\www\project_submission\backend\config\auth.php
+C:\laragon\www\project_submission\project\backend\config\auth.php
+
+Function: session_auth_store
+C:\laragon\www\project_submission\backend\config\auth.php
+C:\laragon\www\project_submission\project\backend\config\auth.php
+
+Function: logged_in_roles
+C:\laragon\www\project_submission\backend\config\auth.php
+C:\laragon\www\project_submission\project\backend\config\auth.php
+
+Function: first_logged_in_role
+C:\laragon\www\project_submission\backend\config\auth.php
+C:\laragon\www\project_submission\project\backend\config\auth.php
+
+Function: dashboard_url_for_role
+C:\laragon\www\project_submission\backend\config\auth.php
+C:\laragon\www\project_submission\project\backend\config\auth.php
+
+Function: current_role
+C:\laragon\www\project_submission\backend\config\auth.php
+C:\laragon\www\project_submission\project\backend\config\auth.php
+
+Function: current_user
+C:\laragon\www\project_submission\backend\config\auth.php
+C:\laragon\www\project_submission\project\backend\config\auth.php
+
+Function: login_user
+C:\laragon\www\project_submission\backend\config\auth.php
+C:\laragon\www\project_submission\project\backend\config\auth.php
+
+Function: set_current_user_session
+C:\laragon\www\project_submission\backend\config\auth.php
+C:\laragon\www\project_submission\project\backend\config\auth.php
+
+Function: logout_user
+C:\laragon\www\project_submission\backend\config\auth.php
+C:\laragon\www\project_submission\project\backend\config\auth.php
+
+Function: require_role
+C:\laragon\www\project_submission\backend\config\auth.php
+C:\laragon\www\project_submission\project\backend\config\auth.php
+
+Function: authenticate_table
+C:\laragon\www\project_submission\backend\config\auth.php
+C:\laragon\www\project_submission\project\backend\config\auth.php
+
+Function: create_notification
+C:\laragon\www\project_submission\backend\config\auth.php
+C:\laragon\www\project_submission\project\backend\config\auth.php
+
+Function: notification_exists
+C:\laragon\www\project_submission\backend\config\auth.php
+C:\laragon\www\project_submission\project\backend\config\auth.php
+
+Function: create_notification_once
+C:\laragon\www\project_submission\backend\config\auth.php
+C:\laragon\www\project_submission\project\backend\config\auth.php
+
+Function: ensure_deadline_schema
+C:\laragon\www\project_submission\backend\config\auth.php
+C:\laragon\www\project_submission\project\backend\config\auth.php
+
+Function: ensure_profile_media_schema
+C:\laragon\www\project_submission\backend\config\auth.php
+C:\laragon\www\project_submission\project\backend\config\auth.php
+
+Function: send_deadline_mail_if_possible
+C:\laragon\www\project_submission\backend\config\auth.php
+C:\laragon\www\project_submission\project\backend\config\auth.php
+
+Function: subject_deadline_window
+C:\laragon\www\project_submission\backend\config\auth.php
+C:\laragon\www\project_submission\project\backend\config\auth.php
+
+Function: process_subject_deadlines
+C:\laragon\www\project_submission\backend\config\auth.php
+C:\laragon\www\project_submission\project\backend\config\auth.php
+
+Function: log_action
+C:\laragon\www\project_submission\backend\config\auth.php
+C:\laragon\www\project_submission\project\backend\config\auth.php
+
+Function: active_school_year_id
+C:\laragon\www\project_submission\backend\config\auth.php
+C:\laragon\www\project_submission\project\backend\config\auth.php
+
+Function: active_semester_id
+C:\laragon\www\project_submission\backend\config\auth.php
+C:\laragon\www\project_submission\project\backend\config\auth.php
+
+Function: count_unread_notifications
+C:\laragon\www\project_submission\backend\config\auth.php
+C:\laragon\www\project_submission\project\backend\config\auth.php
+
+Function: pdo
+C:\laragon\www\project_submission\backend\config\db.php
+C:\laragon\www\project_submission\project\backend\config\db.php
+
+Function: backup_dump_sql
+C:\laragon\www\project_submission\backend\helpers\backup.php
+C:\laragon\www\project_submission\project\backend\helpers\backup.php
+
+Function: backup_make_zip
+C:\laragon\www\project_submission\backend\helpers\backup.php
+C:\laragon\www\project_submission\project\backend\helpers\backup.php
+
+Function: export_supports_xlsx
+C:\laragon\www\project_submission\backend\helpers\export.php
+C:\laragon\www\project_submission\project\backend\helpers\export.php
+
+Function: export_as_csv
+C:\laragon\www\project_submission\backend\helpers\export.php
+C:\laragon\www\project_submission\project\backend\helpers\export.php
+
+Function: export_as_xlsx
+C:\laragon\www\project_submission\backend\helpers\export.php
+C:\laragon\www\project_submission\project\backend\helpers\export.php
+
+Function: export_table
+C:\laragon\www\project_submission\backend\helpers\export.php
+C:\laragon\www\project_submission\project\backend\helpers\export.php
+
+Function: mail_log_path
+C:\laragon\www\project_submission\backend\helpers\mailer.php
+C:\laragon\www\project_submission\project\backend\helpers\mailer.php
+
+Function: mail_write_log
+C:\laragon\www\project_submission\backend\helpers\mailer.php
+C:\laragon\www\project_submission\project\backend\helpers\mailer.php
+
+Function: smtp_read_response
+C:\laragon\www\project_submission\backend\helpers\mailer.php
+C:\laragon\www\project_submission\project\backend\helpers\mailer.php
+
+Function: smtp_expect
+C:\laragon\www\project_submission\backend\helpers\mailer.php
+C:\laragon\www\project_submission\project\backend\helpers\mailer.php
+
+Function: smtp_command
+C:\laragon\www\project_submission\backend\helpers\mailer.php
+C:\laragon\www\project_submission\project\backend\helpers\mailer.php
+
+Function: send_system_mail_via_smtp
+C:\laragon\www\project_submission\backend\helpers\mailer.php
+C:\laragon\www\project_submission\project\backend\helpers\mailer.php
+
+Function: send_system_mail
+C:\laragon\www\project_submission\backend\helpers\mailer.php
+C:\laragon\www\project_submission\project\backend\helpers\mailer.php
+
+Function: ensure_submission_activity_schema
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: all_active_sections
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: all_sections
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: all_teachers
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: all_subjects
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: student_subjects
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: fetch_notifications
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: mark_notifications_read
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: mark_notification_read
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: fetch_notification_filters
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: status_badge
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\backend\helpers\security.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: fetch_student_detail
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: fetch_subject_detail
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: fetch_submission_detail
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: fetch_submission_members
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: teacher_can_access_submission
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: has_demo_access
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: count_for_query
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: all_school_years
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: all_semesters
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: fetch_section_distribution
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: fetch_subject_submission_distribution
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: student_submission_row_for_manage
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: student_can_edit_submission
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: team_member_rows
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: archive_submission_record
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: delete_submission_record
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: student_team_submissions
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: student_team_for_subject
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: find_students_by_student_ids
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: teacher_sections
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: all_subjects_for_teacher
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: available_subject_sections
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: teacher_students
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: send_student_activation_invite
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: student_subject_locked
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: format_deadline_for_input
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\backend\helpers\security.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: deadline_badge_html
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: subject_sections_with_deadlines
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: subject_resources_for_role
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: student_visible_subject_resources
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: ensure_submission_history_table
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: next_submission_history_version
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: snapshot_submission_history
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: ensure_submission_history_seed
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: fetch_submission_history
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: fetch_submission_history_map
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: action_badge
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: subject_activities_for_teacher
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: activity_section_ids
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: activity_sections_label
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: teacher_activity_detail
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: activity_window
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: student_activity_locked
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: student_visible_activities
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: student_activity_detail
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: student_team_for_activity
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: activity_eligible_section_ids
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: searchable_students_for_activity
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: students_for_activity_ids
+C:\laragon\www\project_submission\backend\helpers\query.php
+C:\laragon\www\project_submission\project\backend\helpers\query.php
+
+Function: selected
+C:\laragon\www\project_submission\backend\helpers\security.php
+C:\laragon\www\project_submission\project\backend\config\app.php
+
+Function: csrf_token
+C:\laragon\www\project_submission\backend\helpers\security.php
+C:\laragon\www\project_submission\project\backend\config\app.php
+
+Function: verify_csrf
+C:\laragon\www\project_submission\backend\helpers\security.php
+C:\laragon\www\project_submission\project\backend\config\app.php
+
+Function: get_flashes
+C:\laragon\www\project_submission\backend\helpers\security.php
+C:\laragon\www\project_submission\project\backend\config\app.php
+
+Function: set_flash
+C:\laragon\www\project_submission\backend\helpers\security.php
+C:\laragon\www\project_submission\project\backend\config\app.php
+
+Function: redirect_to
+C:\laragon\www\project_submission\backend\helpers\security.php
+C:\laragon\www\project_submission\project\backend\config\app.php
+
+Function: ensure_upload_dir
+C:\laragon\www\project_submission\backend\helpers\uploads.php
+C:\laragon\www\project_submission\project\backend\helpers\uploads.php
+
+Function: detect_upload_extension
+C:\laragon\www\project_submission\backend\helpers\uploads.php
+C:\laragon\www\project_submission\project\backend\helpers\uploads.php
+
+Function: store_uploaded_file
+C:\laragon\www\project_submission\backend\helpers\uploads.php
+C:\laragon\www\project_submission\project\backend\helpers\uploads.php
+
+Function: student_profile_avatar_initial
+C:\laragon\www\project_submission\project\student\profile.php
+C:\laragon\www\project_submission\student\profile.php
+
+Function: student_avatar_upload
+C:\laragon\www\project_submission\project\student\profile.php
+C:\laragon\www\project_submission\student\profile.php
+
+Function: teacher_profile_avatar_initial
+C:\laragon\www\project_submission\project\teacher\profile.php
+C:\laragon\www\project_submission\teacher\profile.php
+
+Function: teacher_avatar_upload
+C:\laragon\www\project_submission\project\teacher\profile.php
+C:\laragon\www\project_submission\teacher\profile.php
+
+Function: teacher_students_redirect_target
+C:\laragon\www\project_submission\project\teacher\students.php
+C:\laragon\www\project_submission\teacher\students.php
+
+Function: teacher_student_template_path
+C:\laragon\www\project_submission\project\teacher\students.php
+C:\laragon\www\project_submission\teacher\students.php
+
+Function: teacher_download_template
+C:\laragon\www\project_submission\project\teacher\students.php
+C:\laragon\www\project_submission\teacher\students.php
+
+Function: import_normalize_header
+C:\laragon\www\project_submission\project\teacher\students.php
+C:\laragon\www\project_submission\teacher\students.php
+
+Function: import_column_letter_to_index
+C:\laragon\www\project_submission\project\teacher\students.php
+C:\laragon\www\project_submission\teacher\students.php
+
+Function: import_parse_xlsx_rows
+C:\laragon\www\project_submission\project\teacher\students.php
+C:\laragon\www\project_submission\teacher\students.php
+
+Function: import_parse_csv_rows
+C:\laragon\www\project_submission\project\teacher\students.php
+C:\laragon\www\project_submission\teacher\students.php
+
+Function: import_read_uploaded_rows
+C:\laragon\www\project_submission\project\teacher\students.php
+C:\laragon\www\project_submission\teacher\students.php
+
+Function: build_import_preview
+C:\laragon\www\project_submission\project\teacher\students.php
+C:\laragon\www\project_submission\teacher\students.php
+
+Function: teacher_submission_initials
+C:\laragon\www\project_submission\project\teacher\submissions.php
+C:\laragon\www\project_submission\teacher\submissions.php
+
+Function: getItems
+C:\laragon\www\project_submission\project\teacher\submissions.php
+C:\laragon\www\project_submission\teacher\submissions.php
+
+Function: applyView
+C:\laragon\www\project_submission\project\teacher\submissions.php
+C:\laragon\www\project_submission\teacher\submissions.php
+
+Function: setEmptyState
+C:\laragon\www\project_submission\project\teacher\submissions.php
+C:\laragon\www\project_submission\teacher\submissions.php
+
+Function: filterCollection
+C:\laragon\www\project_submission\project\teacher\submissions.php
+C:\laragon\www\project_submission\teacher\submissions.php
+
+Function: runFilters
+C:\laragon\www\project_submission\project\teacher\submissions.php
+C:\laragon\www\project_submission\teacher\submissions.php
+

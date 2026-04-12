@@ -1,0 +1,16 @@
+parameters:
+  level: 5
+  paths:
+    - backend
+    - admin
+    - student
+    - teacher
+    - index.php
+  excludePaths:
+    - project/*
+    - storage/*
+    - uploads/*
+    - backend/openrouter/*
+  inferPrivatePropertyTypeFromConstructor: true
+  # memoryLimit removed for compatibility with bundled PHAR
+includes: []

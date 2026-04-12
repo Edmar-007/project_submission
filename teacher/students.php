@@ -132,7 +132,7 @@ function import_parse_csv_rows(string $path): array {
     $rows = [];
     while (($data = fgetcsv($handle)) !== false) {
         $clean = array_map(static fn($value) => trim((string) $value), $data);
-        if ($rows === [] && isset($clean[0])) {
+        if ($rows === [] && $clean !== []) {
             $clean[0] = preg_replace('/^ï»¿/', '', $clean[0]);
         }
         $rows[] = $clean;

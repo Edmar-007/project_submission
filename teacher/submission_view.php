@@ -29,7 +29,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       if (!empty($member['email']) && filter_var($member['email'], FILTER_VALIDATE_EMAIL)) {
         require_once __DIR__ . '/../backend/helpers/mailer.php';
         $mailSubject = 'Submission update: ' . $submission['assigned_system'];
-        $mailBody = "Hello " . ($member['member_name'] ?? $member['full_name'] ?? 'Student') . ",\n\nYour submission for '" . ($submission['assigned_system'] ?? $submission['subject_name']) . "' has been updated to '" . $status . "'" . ($grade ? (" with grade " . $grade) : "") . ".\n\nYou can view details here: " . url('student/my_submissions.php') . "\n\nRegards,\n" . (MAIL_FROM_NAME ?? 'Course System');
+        $memberName = trim((string) ($member['member_name'] ?? ''));
+        if ($memberName === '') {
+            $memberName = trim((string) ($member['full_name'] ?? ''));
+        }
+        if ($memberName === '') {
+            $memberName = 'Student';
+        }
+        $submissionLabel = trim((string) ($submission['assigned_system'] ?? ''));
+        if ($submissionLabel === '') {
+            $submissionLabel = (string) $submission['subject_name'];
+        }
+        $mailBody = "Hello " . $memberName . ",\n\nYour submission for '" . $submissionLabel . "' has been updated to '" . $status . "'" . ($grade ? (" with grade " . $grade) : "") . ".\n\nYou can view details here: " . url('student/my_submissions.php') . "\n\nRegards,\n" . MAIL_FROM_NAME;
         @send_system_mail($member['email'], $mailSubject, $mailBody);
       }
     }
@@ -43,15 +54,15 @@ $title = 'Teacher Review Workspace';
 $subtitle = 'Submission context, links, demo access, and a sticky grading panel';
 require_once __DIR__ . '/../backend/partials/header.php';
 ?>
-<div class="detail-grid review-workspace-grid ui-section">
+<div class="detail-grid review-workspace-grid">
   <div class="detail-section">
-    <div class="card ui-panel-card">
+    <div class="card">
       <div class="split-header">
         <div>
           <h3 class="section-title"><?= h($submission['assigned_system']) ?></h3>
           <div class="muted small"><?= h($submission['subject_name']) ?> · <?= h($submission['section_name']) ?></div>
         </div>
-        <span class="ui-badge <?= ($submission['status'] ?? '') === 'graded' ? 'ui-badge--success' : (($submission['status'] ?? '') === 'pending' ? 'ui-badge--warning' : 'ui-badge--open') ?>"><?= h(ucfirst((string) $submission['status'])) ?></span>
+        <?= status_badge($submission['status']) ?>
       </div>
       <div class="info-list">
         <div class="row"><span>Student</span><strong><?= h($submission['full_name']) ?> (<?= h($submission['student_code']) ?>)</strong></div>
@@ -61,19 +72,19 @@ require_once __DIR__ . '/../backend/partials/header.php';
       </div>
       <div class="form-actions" style="margin-top:16px;">
         <?php $projectHref = safe_public_url($submission['project_url'] ?? null); $videoHref = safe_public_url($submission['video_url'] ?? null); ?>
-        <?php if ($projectHref): ?><a class="btn btn-secondary ui-btn ui-btn--secondary" target="_blank" rel="noopener" href="<?= h($projectHref) ?>">Open project</a><?php endif; ?>
-        <?php if ($videoHref): ?><a class="btn btn-outline ui-btn ui-btn--ghost" target="_blank" rel="noopener" href="<?= h($videoHref) ?>">Open video</a><?php endif; ?>
-        <a class="btn btn-ghost ui-btn ui-btn--ghost" target="_blank" href="<?= h(url('teacher/print_submission.php?id=' . (int) $submissionId)) ?>">Print review sheet</a>
-        <a class="btn btn-secondary ui-btn ui-btn--primary" href="<?= h(url('teacher/export_submission.php?format=xlsx&submission_id=' . (int) $submissionId)) ?>">Export Excel</a>
+        <?php if ($projectHref): ?><a class="btn btn-secondary" target="_blank" rel="noopener" href="<?= h($projectHref) ?>">Open project</a><?php endif; ?>
+        <?php if ($videoHref): ?><a class="btn btn-outline" target="_blank" rel="noopener" href="<?= h($videoHref) ?>">Open video</a><?php endif; ?>
+        <a class="btn btn-ghost" target="_blank" href="<?= h(url('teacher/print_submission.php?id=' . (int) $submissionId)) ?>">Print copy</a>
+        <a class="btn btn-secondary" href="<?= h(url('teacher/export_submission.php?format=xlsx&submission_id=' . (int) $submissionId)) ?>">Export Excel</a>
       </div>
     </div>
 
-    <div class="card ui-panel-card">
+    <div class="card">
       <h3 class="section-title">Members</h3>
-      <div class="timeline-list ui-member-list"><?php foreach ($members as $member): ?><div class="timeline-item ui-member-card"><strong><?= h($member['member_name']) ?></strong></div><?php endforeach; ?><?php if (!$members): ?><div class="ui-empty-state"><div class="ui-empty-state__icon">○</div><h4 class="ui-empty-state__title">No members submitted</h4><p class="ui-empty-state__text">No member list was submitted.</p></div><?php endif; ?></div>
+      <div class="timeline-list"><?php foreach ($members as $member): ?><div class="timeline-item"><strong><?= h($member['member_name']) ?></strong></div><?php endforeach; ?><?php if (!$members): ?><div class="empty-state">No member list was submitted.</div><?php endif; ?></div>
     </div>
 
-    <div class="card ui-panel-card">
+    <div class="card">
       <h3 class="section-title">Demo access and files</h3>
       <?php if (has_demo_access($submission)): ?>
         <div class="callout">
@@ -81,12 +92,12 @@ require_once __DIR__ . '/../backend/partials/header.php';
           <div class="muted small" style="margin-top:8px;">Username: <?= h(demo_decrypt($submission['admin_username'] ?? '') ?: '—') ?></div>
           <div class="muted small">Password: <?= h(demo_decrypt($submission['admin_password'] ?? '') ?: '—') ?></div>
         </div>
-      <?php else: ?><div class="ui-empty-state" style="padding:18px;"><div class="ui-empty-state__icon">○</div><h4 class="ui-empty-state__title">No demo credentials</h4><p class="ui-empty-state__text">No demo credentials were provided.</p></div><?php endif; ?>
+      <?php else: ?><div class="empty-state" style="padding:18px;">No demo credentials were provided.</div><?php endif; ?>
       <?php if (!empty($submission['attachment_path'])): ?><div class="callout" style="margin-top:12px;"><strong>Attachment</strong><div class="muted small"><a target="_blank" href="<?= h(url($submission['attachment_path'])) ?>">Open uploaded file</a></div></div><?php endif; ?>
     </div>
 
 
-    <div class="card ui-table-card">
+    <div class="card">
       <div class="split-header">
         <div>
           <h3 class="section-title">Version history</h3>
@@ -94,8 +105,8 @@ require_once __DIR__ . '/../backend/partials/header.php';
         </div>
         <span class="pill"><?= count($historyRows) ?> versions</span>
       </div>
-      <div class="table-wrap ui-table-wrap" style="margin-top:16px;">
-        <table class="table-redesign compact-table ui-table">
+      <div class="table-wrap" style="margin-top:16px;">
+        <table class="table-redesign compact-table">
           <thead>
             <tr><th>Version</th><th>Action</th><th>Actor</th><th>Status</th><th>Grade</th><th>Captured</th></tr>
           </thead>
@@ -117,7 +128,7 @@ require_once __DIR__ . '/../backend/partials/header.php';
     </div>
   </div>
   <div class="detail-section sticky-actions">
-    <div class="card sticky-review-panel ui-form-section">
+    <div class="card sticky-review-panel">
       <h3 class="section-title">Grade and feedback</h3>
       <form method="post" class="stack">
         <input type="hidden" name="_csrf" value="<?= h(csrf_token()) ?>">
@@ -126,7 +137,7 @@ require_once __DIR__ . '/../backend/partials/header.php';
         <div><label>Grade</label><input name="grade" value="<?= h((string) $submission['grade']) ?>" placeholder="Grade"></div>
         <div><label>Student-facing feedback</label><textarea name="teacher_feedback" placeholder="Visible to the student/team"><?= h((string) $submission['teacher_feedback']) ?></textarea></div>
         <div><label>Private review notes</label><textarea name="review_notes" placeholder="Internal notes for your review workspace"><?= h((string) ($submission['review_notes'] ?? '')) ?></textarea></div>
-        <button class="btn ui-btn ui-btn--primary" type="submit">Save review</button>
+        <button class="btn" type="submit">Save review</button>
       </form>
     </div>
   </div>

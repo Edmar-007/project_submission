@@ -30,5 +30,41 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="<?= h(asset_url('app.js')) ?>"></script>
 <script type="module" src="<?= h(asset_url('notification-manager.js')) ?>"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Open modals
+  document.querySelectorAll('[data-open-modal]').forEach(button => {
+    button.addEventListener('click', () => {
+      const id = button.getAttribute('data-open-modal');
+      const modal = document.querySelector(`[data-modal="${id}"]`);
+      if (modal) modal.style.display = 'grid';
+    });
+  });
+
+  // Close modals
+  document.querySelectorAll('[data-close-modal]').forEach(button => {
+    button.addEventListener('click', () => {
+      const modal = button.closest('.ui-modal');
+      if (modal) modal.style.display = 'none';
+    });
+  });
+
+  // Click backdrop to close
+  document.querySelectorAll('.ui-modal').forEach(modal => {
+    modal.addEventListener('click', e => {
+      if (e.target === modal) modal.style.display = 'none';
+    });
+  });
+
+  // ESC key to close
+  document.addEventListener('keydown', e => {
+    if (e.key === "Escape") {
+      document.querySelectorAll('.ui-modal').forEach(modal => {
+        modal.style.display = 'none';
+      });
+    }
+  });
+});
+</script>
 </body>
 </html>

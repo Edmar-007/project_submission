@@ -5,6 +5,9 @@ define('FILE_ADMIN_SYSTEM_TOOLS_PHP_LOADED', true);
 require_once __DIR__ . '/../backend/config/app.php';
 require_once __DIR__ . '/../backend/helpers/uploads.php';
 require_once __DIR__ . '/../backend/helpers/backup.php';
+if (!defined('APP_ROOT')) {
+    define('APP_ROOT', dirname(__DIR__));
+}
 require_role('admin');
 $pdo = pdo();
 $admin = current_user();

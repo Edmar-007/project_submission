@@ -36,7 +36,7 @@ require_once __DIR__ . '/../backend/partials/header.php';
 <div class="detail-grid">
   <div class="detail-section">
     <div class="card">
-      <div class="split-header"><div><h3 class="section-title"><?= h($submission['assigned_system']) ?></h3><div class="muted small"><?= h($submission['subject_name']) ?> · <?= h($submission['subject_code']) ?><a class="btn btn-outline" target="_blank" href="<?= h(url('admin/print_submission.php?id=' . (int) $submissionId)) ?>">Print copy</a><a class="btn btn-secondary" href="<?= h(url('admin/export_report.php?type=submissions&format=xlsx&submission_id=' . (int) $submissionId)) ?>">Export Excel</a></div></div><?= status_badge($submission['status']) ?></div>
+      <div class="split-header"><div><h3 class="section-title"><?= h($submission['assigned_system']) ?></h3><div class="muted small"><?= h($submission['subject_name']) ?> · <?= h($submission['subject_code']) ?><a class="btn btn-outline" target="_blank" href="<?= h(url('admin/print_submission.php?id=' . (int) $submissionId)) ?>">Print copy</a></div></div><?= status_badge($submission['status']) ?></div>
       <div class="info-list">
         <div class="row"><span>Student</span><strong><?= h($submission['full_name']) ?> (<?= h($submission['student_code']) ?>)</strong></div>
         <div class="row"><span>Section</span><strong><?= h($submission['section_name']) ?></strong></div>

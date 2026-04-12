@@ -4,6 +4,9 @@ define('FILE_TEACHER_SUBJECT_VIEW_PHP_LOADED', true);
 
 require_once __DIR__ . '/../backend/config/app.php';
 require_once __DIR__ . '/../backend/helpers/uploads.php';
+if (!defined('APP_ROOT')) {
+    define('APP_ROOT', dirname(__DIR__));
+}
 require_role('teacher');
 $teacher = current_user();
 $pdo = pdo();

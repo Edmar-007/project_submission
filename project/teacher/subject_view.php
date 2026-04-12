@@ -286,13 +286,7 @@ require_once __DIR__ . '/../backend/partials/header.php';
           </form>
         </article>
         <article class="card">
-          <div class="split-header">
-            <h3 class="section-title">Activity list</h3>
-            <div class="form-actions">
-              <a class="btn btn-outline" href="<?= h(url('teacher/export_activity_report.php?' . http_build_query(['subject_id' => (int) $subjectId, 'format' => 'xlsx']))) ?>">Export Excel</a>
-              <a class="btn btn-secondary" href="<?= h(url('teacher/export_activity_report.php?' . http_build_query(['subject_id' => (int) $subjectId, 'format' => 'csv']))) ?>">Export CSV</a>
-            </div>
-          </div>
+          <h3 class="section-title">Activity list</h3>
           <div class="timeline-list">
             <?php foreach ($activities as $activity): ?>
               <?php $window = activity_window($activity); ?>

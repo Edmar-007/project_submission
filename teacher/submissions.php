@@ -51,34 +51,27 @@ foreach ($rows as $row) {
     }
 }
 $averageGrade = $gradedCount > 0 ? round($gradeTotal / $gradedCount, 1) : null;
-$reviewBadgeClass = static function (string $status): string {
-    $key = strtolower(trim($status));
-    if ($key === 'graded') return 'ui-badge--success';
-    if ($key === 'pending') return 'ui-badge--warning';
-    if ($key === 'reviewed') return 'ui-badge--open';
-    return 'ui-badge--muted';
-};
 
 $title = 'Teacher Submissions';
 $subtitle = 'Faster review queue with live search, compact table mode, and stronger action hierarchy';
 require_once __DIR__ . '/../backend/partials/header.php';
 ?>
-<div class="kpi-grid ui-stat-grid">
-  <div class="kpi-card ui-stat-card"><span class="label ui-stat-card__label">Pending</span><strong class="ui-stat-card__value"><?= (int) $summary['pending'] ?></strong><span class="muted small ui-stat-card__hint">Waiting for review</span></div>
-  <div class="kpi-card ui-stat-card"><span class="label ui-stat-card__label">Reviewed</span><strong class="ui-stat-card__value"><?= (int) $summary['reviewed'] ?></strong><span class="muted small ui-stat-card__hint">Checked but not finalized</span></div>
-  <div class="kpi-card ui-stat-card"><span class="label ui-stat-card__label">Graded</span><strong class="ui-stat-card__value"><?= (int) $summary['graded'] ?></strong><span class="muted small ui-stat-card__hint">Ready for students</span></div>
-  <div class="kpi-card ui-stat-card"><span class="label ui-stat-card__label">Average grade</span><strong class="ui-stat-card__value"><?= $averageGrade !== null ? h(number_format($averageGrade, 1)) : '—' ?></strong><span class="muted small ui-stat-card__hint">Across visible graded submissions</span></div>
+<div class="kpi-grid">
+  <div class="kpi-card"><span class="label">Pending</span><strong><?= (int) $summary['pending'] ?></strong><span class="muted small">Waiting for review</span></div>
+  <div class="kpi-card"><span class="label">Reviewed</span><strong><?= (int) $summary['reviewed'] ?></strong><span class="muted small">Checked but not finalized</span></div>
+  <div class="kpi-card"><span class="label">Graded</span><strong><?= (int) $summary['graded'] ?></strong><span class="muted small">Ready for students</span></div>
+  <div class="kpi-card"><span class="label">Average grade</span><strong><?= $averageGrade !== null ? h(number_format($averageGrade, 1)) : '—' ?></strong><span class="muted small">Across visible graded submissions</span></div>
 </div>
 
-<section class="workspace-shell submissions-workspace ui-section" data-submission-workspace>
-  <div class="workspace-head submissions-workspace-head ui-section__head">
+<section class="workspace-shell submissions-workspace" data-submission-workspace>
+  <div class="workspace-head submissions-workspace-head">
     <div>
-      <div class="eyebrow ui-section__eyebrow">Teacher review queue</div>
-      <h2 class="ui-section__title">Review faster with cards or a compact table</h2>
-      <p class="muted ui-section__desc">Search instantly, switch views, and jump into grading with fewer clicks.</p>
+      <div class="eyebrow">Teacher review queue</div>
+      <h2>Review faster with cards or a compact table</h2>
+      <p class="muted">Search instantly, switch views, and jump into grading with fewer clicks.</p>
       <div class="form-actions" style="margin-top:10px;">
-        <a class="btn ui-btn ui-btn--primary" href="<?= h(url('teacher/export_submission.php?' . http_build_query(['format' => 'xlsx', 'subject_id' => $filterSubject, 'status' => $filterStatus]))) ?>">Export Excel</a>
-        <a class="btn btn-secondary ui-btn ui-btn--secondary" href="<?= h(url('teacher/export_submission.php?' . http_build_query(['format' => 'csv', 'subject_id' => $filterSubject, 'status' => $filterStatus]))) ?>">Export CSV</a>
+        <a class="btn" href="<?= h(url('teacher/export_submission.php?' . http_build_query(['format' => 'xlsx', 'subject_id' => $filterSubject, 'status' => $filterStatus]))) ?>">Export Excel</a>
+        <a class="btn btn-secondary" href="<?= h(url('teacher/export_submission.php?' . http_build_query(['format' => 'csv', 'subject_id' => $filterSubject, 'status' => $filterStatus]))) ?>">Export CSV</a>
       </div>
     </div>
     <div class="submission-view-switch" role="tablist" aria-label="Submission layout">
@@ -87,7 +80,7 @@ require_once __DIR__ . '/../backend/partials/header.php';
     </div>
   </div>
 
-  <form method="get" class="filter-row submissions-toolbar ui-filter-group" data-submission-filter-form>
+  <form method="get" class="filter-row submissions-toolbar" data-submission-filter-form>
     <div class="submission-search-field">
       <label class="sr-only" for="submission-live-search">Search submissions</label>
       <input id="submission-live-search" type="search" placeholder="Search by student, ID, subject, section, or project" autocomplete="off" data-submission-search>
@@ -104,15 +97,15 @@ require_once __DIR__ . '/../backend/partials/header.php';
       <option value="reviewed" <?= selected($filterStatus, 'reviewed') ?>>Reviewed</option>
       <option value="graded" <?= selected($filterStatus, 'graded') ?>>Graded</option>
     </select>
-    <a class="btn btn-outline ui-btn ui-btn--ghost" href="<?= h(url('teacher/submissions.php')) ?>">Reset</a>
+    <a class="btn btn-outline" href="<?= h(url('teacher/submissions.php')) ?>">Reset</a>
   </form>
 
   <div class="submission-quickbar">
-    <div class="submission-quick-filters ui-filter-group" role="toolbar" aria-label="Quick submission filters">
-      <button type="button" class="quick-filter-chip ui-filter active is-active" data-queue-filter="all">All</button>
-      <button type="button" class="quick-filter-chip ui-filter" data-queue-filter="pending">Pending</button>
-      <button type="button" class="quick-filter-chip ui-filter" data-queue-filter="reviewed">Reviewed</button>
-      <button type="button" class="quick-filter-chip ui-filter" data-queue-filter="graded">Graded</button>
+    <div class="submission-quick-filters" role="toolbar" aria-label="Quick submission filters">
+      <button type="button" class="quick-filter-chip active" data-queue-filter="all">All</button>
+      <button type="button" class="quick-filter-chip" data-queue-filter="pending">Pending</button>
+      <button type="button" class="quick-filter-chip" data-queue-filter="reviewed">Reviewed</button>
+      <button type="button" class="quick-filter-chip" data-queue-filter="graded">Graded</button>
     </div>
     <div class="muted small submission-live-count"><span data-submission-live-count><?= count($rows) ?></span> submission<?= count($rows) === 1 ? '' : 's' ?> visible in this workspace</div>
   </div>
@@ -139,13 +132,13 @@ require_once __DIR__ . '/../backend/partials/header.php';
             <div class="submission-student-copy">
               <div class="submission-title-row">
                 <h3 class="section-title"><?= h($row['full_name']) ?></h3>
-                <span class="ui-badge <?= h($reviewBadgeClass((string) ($row['status'] ?? ''))) ?>"><?= h(ucfirst((string) $row['status'])) ?></span>
+                <?= status_badge($row['status']) ?>
               </div>
               <div class="muted small">ID: <?= h($row['student_code']) ?> · <?= h($row['section_name']) ?></div>
             </div>
           </div>
           <div class="submission-card-actions">
-            <a class="btn ui-btn ui-btn--primary" href="<?= h(url('teacher/submission_view.php?id=' . (int) $row['id'])) ?>">Review</a>
+            <a class="btn" href="<?= h(url('teacher/submission_view.php?id=' . (int) $row['id'])) ?>">Review</a>
           </div>
         </div>
 
@@ -163,12 +156,12 @@ require_once __DIR__ . '/../backend/partials/header.php';
         </div>
       </article>
     <?php endforeach; ?>
-    <div class="ui-empty-state submission-empty-state<?= $rows ? ' is-hidden' : '' ?>" data-submission-empty="cards"><div class="ui-empty-state__icon">○</div><h3 class="ui-empty-state__title">No pending submissions to review</h3><p class="ui-empty-state__text">No submissions matched the current search.</p></div>
+    <div class="card empty-state submission-empty-state<?= $rows ? ' is-hidden' : '' ?>" data-submission-empty="cards">No submissions matched the current search.</div>
   </div>
 
-  <div class="submissions-table-shell is-hidden ui-table-card" data-submission-panel="table">
-    <div class="submissions-table-wrap ui-table-wrap">
-      <table class="table-redesign submission-compact-table ui-table">
+  <div class="submissions-table-shell is-hidden" data-submission-panel="table">
+    <div class="submissions-table-wrap">
+      <table class="table-redesign submission-compact-table">
         <thead>
           <tr>
             <th>Student</th>
@@ -209,12 +202,12 @@ require_once __DIR__ . '/../backend/partials/header.php';
             <td data-label="Subject"><span class="pill soft"><?= h($row['subject_code']) ?></span><div class="muted small"><?= h($row['subject_name']) ?></div></td>
             <td data-label="Project"><strong><?= h($row['assigned_system']) ?></strong></td>
             <td data-label="Team"><?= h($teamLabel) ?></td>
-            <td data-label="Status"><span class="ui-badge <?= h($reviewBadgeClass((string) ($row['status'] ?? ''))) ?>"><?= h(ucfirst((string) $row['status'])) ?></span></td>
+            <td data-label="Status"><?= status_badge($row['status']) ?></td>
             <td data-label="Grade"><strong><?= h($gradeLabel) ?></strong></td>
             <td data-label="Submitted"><?= h($submittedLabel) ?></td>
             <td data-label="Actions">
               <div class="table-actions">
-                <a class="btn ui-btn ui-btn--primary" href="<?= h(url('teacher/submission_view.php?id=' . (int) $row['id'])) ?>">Review</a>
+                <a class="btn" href="<?= h(url('teacher/submission_view.php?id=' . (int) $row['id'])) ?>">Review</a>
               </div>
             </td>
           </tr>
@@ -222,7 +215,7 @@ require_once __DIR__ . '/../backend/partials/header.php';
         </tbody>
       </table>
     </div>
-    <div class="ui-empty-state submission-empty-state<?= $rows ? ' is-hidden' : '' ?>" data-submission-empty="table"><div class="ui-empty-state__icon">○</div><h3 class="ui-empty-state__title">No results found</h3><p class="ui-empty-state__text">No submissions matched the current search.</p></div>
+    <div class="card empty-state submission-empty-state<?= $rows ? ' is-hidden' : '' ?>" data-submission-empty="table">No submissions matched the current search.</div>
   </div>
 </section>
 
@@ -296,7 +289,6 @@ document.addEventListener('DOMContentLoaded', function () {
       activeQuickFilter = button.getAttribute('data-queue-filter') || 'all';
       quickFilters.forEach(function (chip) {
         chip.classList.toggle('active', chip === button);
-        chip.classList.toggle('is-active', chip === button);
       });
       runFilters();
     });

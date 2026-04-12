@@ -31,24 +31,23 @@ $resources = student_visible_subject_resources($subjectId);
 $projectHref = safe_public_url($submission['project_url'] ?? null);
 $videoHref = safe_public_url($submission['video_url'] ?? null);
 ?>
-<div class="preview-shell detail-preview-shell ui-modal__body">
-  <div class="preview-hero ui-modal__header" style="padding:0 0 16px;">
+<div class="preview-shell detail-preview-shell">
+  <div class="preview-hero">
     <div>
-      <span class="ui-section__eyebrow">Quick view</span>
-      <h2 class="ui-modal__title"><?= h($subject['subject_name']) ?></h2>
-      <p class="ui-modal__subtitle"><?= h($subject['description'] ?: 'No subject description provided yet.') ?></p>
+      <span class="pill soft"><?= h($subject['subject_code']) ?></span>
+      <h3><?= h($subject['subject_name']) ?></h3>
+      <p class="muted"><?= h($subject['description'] ?: 'No subject description provided yet.') ?></p>
     </div>
     <div class="preview-hero-actions">
-      <?php $previewState = !empty($subject['submission_locked']) ? 'Locked' : (string) ($submission['status'] ?? 'Ready'); ?>
-      <span class="ui-badge <?= !empty($subject['submission_locked']) ? 'ui-badge--danger' : 'ui-badge--open' ?>"><?= h($previewState) ?></span>
-      <a class="btn ui-btn ui-btn--primary" href="<?= h(url('student/submit.php?subject_id=' . $subjectId)) ?>">Open submit page</a>
+      <?= status_badge(!empty($subject['submission_locked']) ? 'locked' : ($submission['status'] ?? 'ready')) ?>
+      <a class="btn" href="<?= h(url('student/submit.php?subject_id=' . $subjectId)) ?>">Open submit page</a>
     </div>
   </div>
 
-  <div class="ui-info-strip" style="margin-bottom:16px;">
-    <div class="ui-info-item"><span class="ui-info-item__label">Teacher</span><strong class="ui-info-item__value"><?= h($subject['teacher_name']) ?></strong></div>
-    <div class="ui-info-item"><span class="ui-info-item__label">Deadline</span><strong class="ui-info-item__value"><?= h($subject['deadline_window']['label'] ?? 'No active deadlines') ?></strong></div>
-    <div class="ui-info-item"><span class="ui-info-item__label">Team status</span><strong class="ui-info-item__value"><?= h($team ? ucfirst((string) $team['role']) : 'No team yet') ?></strong></div>
+  <div class="modal-summary-grid modal-summary-grid-3">
+    <div class="segment"><span class="muted small">Teacher</span><strong><?= h($subject['teacher_name']) ?></strong></div>
+    <div class="segment"><span class="muted small">Deadline</span><strong><?= h($subject['deadline_window']['label'] ?? 'No active deadlines') ?></strong></div>
+    <div class="segment"><span class="muted small">Team status</span><strong><?= h($team ? ucfirst((string) $team['role']) : 'No team yet') ?></strong></div>
   </div>
 
   <?php if (!empty($subject['teacher_submission_lock_note'])): ?>
@@ -58,12 +57,12 @@ $videoHref = safe_public_url($submission['video_url'] ?? null);
     </div>
   <?php endif; ?>
 
-  <div class="ui-modal__grid" style="margin-top:16px;">
-    <section class="card preview-panel compact-panel ui-panel-card">
+  <div class="preview-grid two-col" style="margin-top:16px;">
+    <section class="card preview-panel compact-panel">
       <div class="split-header">
         <div>
-          <h4 class="section-title ui-form-section__title">Current submission snapshot</h4>
-          <div class="muted small ui-form-section__hint">See the latest status before opening the full workspace.</div>
+          <h4 class="section-title">Current submission snapshot</h4>
+          <div class="muted small">See the latest status before opening the full workspace.</div>
         </div>
         <?php if ($submission): ?><span class="pill">Latest</span><?php endif; ?>
       </div>
@@ -74,21 +73,21 @@ $videoHref = safe_public_url($submission['video_url'] ?? null);
           <div class="row"><span>Grade</span><strong><?= h($submission['grade'] ?: '—') ?></strong></div>
           <div class="row"><span>Updated</span><strong><?= h(date('M d, Y g:i A', strtotime((string) $submission['updated_at']))) ?></strong></div>
         </div>
-          <div class="action-row ui-action-row" style="margin-top:14px;">
-            <?php if ($projectHref): ?><a class="btn btn-secondary ui-btn ui-btn--secondary" href="<?= h($projectHref) ?>" target="_blank" rel="noopener">Open project</a><?php endif; ?>
-            <?php if ($videoHref): ?><a class="btn btn-outline ui-btn ui-btn--ghost" href="<?= h($videoHref) ?>" target="_blank" rel="noopener">Open video</a><?php endif; ?>
-            <a class="btn btn-ghost ui-btn ui-btn--ghost" href="<?= h(url('student/my_submissions.php')) ?>">Open history</a>
-          </div>
+        <div class="action-row" style="margin-top:14px;">
+          <?php if ($projectHref): ?><a class="btn btn-secondary" href="<?= h($projectHref) ?>" target="_blank" rel="noopener">Open project</a><?php endif; ?>
+          <?php if ($videoHref): ?><a class="btn btn-outline" href="<?= h($videoHref) ?>" target="_blank" rel="noopener">Open video</a><?php endif; ?>
+          <a class="btn btn-ghost" href="<?= h(url('student/my_submissions.php')) ?>">Open history</a>
+        </div>
       <?php else: ?>
-        <div class="ui-empty-state"><div class="ui-empty-state__icon">○</div><h4 class="ui-empty-state__title">No submission yet</h4><p class="ui-empty-state__text">Open the submit page to start your first version.</p></div>
+        <div class="empty-state">No team submission yet for this subject. Open the submit page to start your first version.</div>
       <?php endif; ?>
     </section>
 
-    <section class="card preview-panel compact-panel ui-panel-card">
+    <section class="card preview-panel compact-panel">
       <div class="split-header">
         <div>
-          <h4 class="section-title ui-form-section__title">Subject resources</h4>
-          <div class="muted small ui-form-section__hint">Only files shared for students in this subject.</div>
+          <h4 class="section-title">Subject resources</h4>
+          <div class="muted small">Only files shared for students in this subject.</div>
         </div>
         <span class="pill"><?= count($resources) ?></span>
       </div>
@@ -100,12 +99,12 @@ $videoHref = safe_public_url($submission['video_url'] ?? null);
                 <strong><?= h($resource['title']) ?></strong>
                 <div class="muted small"><?= h(basename((string) $resource['file_path'])) ?></div>
               </div>
-              <a class="btn btn-outline ui-btn ui-btn--ghost" href="<?= h(url($resource['file_path'])) ?>" target="_blank" rel="noopener">Open</a>
+              <a class="btn btn-outline" href="<?= h(url($resource['file_path'])) ?>" target="_blank" rel="noopener">Open</a>
             </div>
           <?php endforeach; ?>
         </div>
       <?php else: ?>
-        <div class="ui-empty-state"><div class="ui-empty-state__icon">○</div><h4 class="ui-empty-state__title">No resources shared yet</h4><p class="ui-empty-state__text">Materials from your teacher will appear here.</p></div>
+        <div class="empty-state">No student-facing resources have been shared yet.</div>
       <?php endif; ?>
     </section>
   </div>

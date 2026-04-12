@@ -55,7 +55,6 @@ require_once __DIR__ . '/../backend/partials/header.php';
         <?php if ($projectHref): ?><a class="btn btn-secondary" target="_blank" rel="noopener" href="<?= h($projectHref) ?>">Open project</a><?php endif; ?>
         <?php if ($videoHref): ?><a class="btn btn-outline" target="_blank" rel="noopener" href="<?= h($videoHref) ?>">Open video</a><?php endif; ?>
         <a class="btn btn-ghost" target="_blank" href="<?= h(url('teacher/print_submission.php?id=' . (int) $submissionId)) ?>">Print copy</a>
-        <a class="btn btn-secondary" href="<?= h(url('teacher/export_submission.php?format=xlsx&submission_id=' . (int) $submissionId)) ?>">Export Excel</a>
       </div>
     </div>
 

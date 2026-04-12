@@ -117,7 +117,7 @@ $profilePage = match ($role) {
       <?php foreach (($nav[$role] ?? []) as $label => $path): ?>
         <?php $isActive = str_contains($currentPath, basename($path)); ?>
         <a class="<?= $isActive ? 'active' : '' ?>" href="<?= h(url($path)) ?>" data-nav-label="<?= h($label) ?>" <?= $isActive ? 'aria-current="page"' : '' ?>>
-          <span class="nav-icon"><?= $navIcons[$label] ?? ($navIcons['Settings'] ?? '') ?></span>
+          <span class="nav-icon"><?= $navIcons[$label] ?? $navIcons['Settings'] ?></span>
           <span><?= h($label) ?></span>
         </a>
       <?php endforeach; ?>

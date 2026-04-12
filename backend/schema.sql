@@ -436,4 +436,6 @@ INSERT INTO notifications (user_type, user_id, title, message, type) VALUES
 ('admin', 1, 'System Ready', 'Initial academic structure has been seeded successfully.', 'success');
 
 
+
+
 -- V8 notes: mail is optional and logs to backend/logs/mail.log when disabled.

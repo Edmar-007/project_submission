@@ -64,6 +64,46 @@ if (!defined('FLASH_KEY')) define('FLASH_KEY', '_flash_messages');
 
 if (!defined('DEMO_CREDENTIAL_SECRET')) define('DEMO_CREDENTIAL_SECRET', getenv('DEMO_CREDENTIAL_SECRET') ?: 'change-me-before-production');
 
+if (!function_exists('demo_encrypt')) {
+function demo_encrypt(?string $value): ?string {
+    if ($value === null || $value === '') {
+        return $value;
+    }
+    if (!function_exists('openssl_encrypt')) {
+        return base64_encode($value);
+    }
+    $key = hash('sha256', DEMO_CREDENTIAL_SECRET, true);
+    $iv = random_bytes(16);
+    $ciphertext = openssl_encrypt($value, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv);
+    if ($ciphertext === false) {
+        return base64_encode($value);
+    }
+    return 'enc:' . base64_encode($iv . $ciphertext);
+}
+}
+
+if (!function_exists('demo_decrypt')) {
+function demo_decrypt(?string $value): ?string {
+    if ($value === null || $value === '') {
+        return $value;
+    }
+    if (str_starts_with($value, 'enc:') && function_exists('openssl_decrypt')) {
+        $payload = base64_decode(substr($value, 4), true);
+        if ($payload !== false && strlen($payload) > 16) {
+            $key = hash('sha256', DEMO_CREDENTIAL_SECRET, true);
+            $iv = substr($payload, 0, 16);
+            $ciphertext = substr($payload, 16);
+            $plain = openssl_decrypt($ciphertext, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv);
+            if ($plain !== false) {
+                return $plain;
+            }
+        }
+    }
+    $decoded = base64_decode($value, true);
+    return $decoded === false ? $value : $decoded;
+}
+}
+
 // Include DB and query helpers after constants are defined
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/../helpers/query.php';
@@ -91,6 +131,13 @@ function url(string $path = ''): string {
     return '/' . implode('/', $combined);
 }
 function url_for(string $path = ''): string { return url($path); }
+
+if (!function_exists('redirect')) {
+function redirect(string $target): void {
+    header('Location: ' . $target);
+    exit;
+}
+}
 
 function asset_url(string $file): string {
     $relative = 'backend/assets/' . ltrim($file, '/');

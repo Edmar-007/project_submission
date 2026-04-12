@@ -51,8 +51,9 @@ foreach ($rows as $row) {
     if (($row['member_role'] ?? '') === 'leader' && !in_array(($row['status'] ?? ''), ['graded', 'archived'], true)) {
         $editableCount++;
     }
-    if (isset($row['grade']) && $row['grade'] !== null && $row['grade'] !== '' && is_numeric($row['grade'])) {
-        $totalGrade += (float) $row['grade'];
+    $gradeValue = trim((string) ($row['grade'] ?? ''));
+    if ($gradeValue !== '' && is_numeric($gradeValue)) {
+        $totalGrade += (float) $gradeValue;
         $numericGradeCount++;
     }
     $historyVersionCount += count($historyMap[(int) $row['id']] ?? []);
@@ -64,11 +65,11 @@ $subtitle = 'Live team submission hub with current status, grades, and version h
 require_once __DIR__ . '/../backend/partials/header.php';
 ?>
 <section class="workspace-shell student-history-shell ui-section">
-  <div class="workspace-head student-history-head ui-section__head">
+  <div class="workspace-head student-history-head">
     <div>
-      <div class="eyebrow ui-section__eyebrow">Student portal</div>
-      <h2 class="ui-section__title">Submission history</h2>
-      <p class="muted ui-section__desc">This is now a real history view. Each submission shows the current state on top and every recorded version underneath, including teacher reviews, grades, and student edits.</p>
+      <div class="eyebrow">Student portal</div>
+      <h2>Submission history</h2>
+      <p class="muted">This is now a real history view. Each submission shows the current state on top and every recorded version underneath, including teacher reviews, grades, and student edits.</p>
     </div>
     <div class="student-history-actions ui-action-row">
       <a class="btn ui-btn ui-btn--primary" href="<?= h(url('student/submit.php')) ?>">New submission</a>
@@ -77,18 +78,11 @@ require_once __DIR__ . '/../backend/partials/header.php';
     </div>
   </div>
 
-  <div class="workspace-stat-grid compact-grid student-history-kpis">
-    <div class="segment"><span class="muted small">Active submissions</span><strong><?= count($rows) ?></strong></div>
-    <div class="segment"><span class="muted small">Graded</span><strong><?= $gradedCount ?></strong></div>
-    <div class="segment"><span class="muted small">Average grade</span><strong><?= h($averageGrade) ?></strong></div>
-    <div class="segment"><span class="muted small">History versions</span><strong><?= $historyVersionCount ?></strong></div>
-  </div>
-
-  <div class="ui-filter-group" data-history-filters style="margin: 14px 0;">
-    <button type="button" class="ui-filter is-active" data-history-filter="all">All</button>
-    <button type="button" class="ui-filter" data-history-filter="pending">Pending</button>
-    <button type="button" class="ui-filter" data-history-filter="reviewed">Reviewed</button>
-    <button type="button" class="ui-filter" data-history-filter="graded">Graded</button>
+  <div class="workspace-stat-grid compact-grid student-history-kpis ui-stat-grid">
+    <div class="segment ui-stat-card"><span class="muted small">Active submissions</span><strong><?= count($rows) ?></strong></div>
+    <div class="segment ui-stat-card"><span class="muted small">Graded</span><strong><?= $gradedCount ?></strong></div>
+    <div class="segment ui-stat-card"><span class="muted small">Average grade</span><strong><?= h($averageGrade) ?></strong></div>
+    <div class="segment ui-stat-card"><span class="muted small">History versions</span><strong><?= $historyVersionCount ?></strong></div>
   </div>
 
   <?php foreach ($rows as $row): ?>
@@ -97,7 +91,7 @@ require_once __DIR__ . '/../backend/partials/header.php';
       $historyRows = $historyMap[(int) $row['id']] ?? [];
       $latestHistory = $historyRows[0] ?? null;
     ?>
-    <article class="card submission-history-record" data-history-item data-status="<?= h((string) ($row['status'] ?? '')) ?>">
+    <article class="card submission-history-record ui-panel-card">
       <div class="split-header submission-history-summary">
         <div>
           <div class="eyebrow"><?= h($row['subject_code']) ?> · <?= h($row['activity_title'] ?? $row['title'] ?? 'General submission') ?> · <?= h($row['team_name']) ?></div>
@@ -106,7 +100,7 @@ require_once __DIR__ . '/../backend/partials/header.php';
         </div>
         <div class="submission-history-badges">
           <?= status_badge((string) $row['status']) ?>
-          <?php if ($latestHistory): ?><span class="ui-badge ui-badge--muted">v<?= (int) $latestHistory['version_no'] ?></span><?php endif; ?>
+          <?php if ($latestHistory): ?><span class="pill">v<?= (int) $latestHistory['version_no'] ?></span><?php endif; ?>
         </div>
       </div>
 
@@ -124,24 +118,24 @@ require_once __DIR__ . '/../backend/partials/header.php';
         </div>
         <div class="submission-primary-actions">
           <?php $projectHref = safe_public_url($row['project_url'] ?? null); $videoHref = safe_public_url($row['video_url'] ?? null); ?>
-          <?php if ($projectHref): ?><a class="btn btn-secondary ui-btn ui-btn--secondary" target="_blank" rel="noopener" href="<?= h($projectHref) ?>">Open project</a><?php endif; ?>
-          <?php if ($videoHref): ?><a class="btn btn-outline ui-btn ui-btn--ghost" target="_blank" rel="noopener" href="<?= h($videoHref) ?>">Open video</a><?php endif; ?>
-          <?php if (!empty($row['attachment_path'])): ?><a class="btn btn-ghost ui-btn ui-btn--ghost" target="_blank" href="<?= h(url($row['attachment_path'])) ?>">Attachment</a><?php endif; ?>
-          <?php if ($canManage): ?>
-            <a class="btn ui-btn ui-btn--primary" href="<?= h(url('student/submission_edit.php?id=' . (int) $row['id'])) ?>">Edit latest version</a>
-            <form method="post" onsubmit="return confirm('Delete this submission? Its history log will stay available for audit.');" style="display:inline;">
-              <input type="hidden" name="_csrf" value="<?= h(csrf_token()) ?>">
-              <input type="hidden" name="action" value="delete">
-              <input type="hidden" name="submission_id" value="<?= (int) $row['id'] ?>">
-              <button class="btn btn-danger ui-btn ui-btn--danger" type="submit">Delete</button>
-            </form>
+           <?php if ($projectHref): ?><a class="btn btn-secondary ui-btn ui-btn--secondary" target="_blank" rel="noopener" href="<?= h($projectHref) ?>">Open project</a><?php endif; ?>
+           <?php if ($videoHref): ?><a class="btn btn-outline ui-btn ui-btn--ghost" target="_blank" rel="noopener" href="<?= h($videoHref) ?>">Open video</a><?php endif; ?>
+           <?php if (!empty($row['attachment_path'])): ?><a class="btn btn-ghost ui-btn ui-btn--ghost" target="_blank" href="<?= h(url($row['attachment_path'])) ?>">Attachment</a><?php endif; ?>
+           <?php if ($canManage): ?>
+             <a class="btn ui-btn ui-btn--primary" href="<?= h(url('student/submission_edit.php?id=' . (int) $row['id'])) ?>">Edit latest version</a>
+             <form method="post" onsubmit="return confirm('Delete this submission? Its history log will stay available for audit.');" style="display:inline;">
+               <input type="hidden" name="_csrf" value="<?= h(csrf_token()) ?>">
+               <input type="hidden" name="action" value="delete">
+               <input type="hidden" name="submission_id" value="<?= (int) $row['id'] ?>">
+               <button class="btn btn-danger ui-btn ui-btn--danger" type="submit">Delete</button>
+             </form>
           <?php else: ?>
             <span class="muted small"><?= ($row['status'] ?? '') === 'archived' ? 'Removed from active workflow' : 'Locked after grading' ?></span>
           <?php endif; ?>
         </div>
       </div>
 
-      <section class="history-ui-block ui-table-card">
+      <section class="history-ui-block">
         <div class="history-ui-head">
           <div>
             <div class="eyebrow">Submission history</div>
@@ -204,8 +198,8 @@ require_once __DIR__ . '/../backend/partials/header.php';
             <?php endforeach; ?>
           </div>
 
-          <div class="table-wrap history-table-wrap ui-table-wrap">
-            <table class="table-redesign student-history-table compact-table ui-table">
+          <div class="table-wrap history-table-wrap">
+            <table class="table-redesign student-history-table compact-table">
               <thead>
                 <tr>
                   <th>Version</th>
@@ -230,7 +224,7 @@ require_once __DIR__ . '/../backend/partials/header.php';
                   </tr>
                 <?php endforeach; ?>
                 <?php if (!$historyRows): ?>
-                  <tr><td colspan="7"><div class="ui-empty-state"><div class="ui-empty-state__icon">○</div><h4 class="ui-empty-state__title">No versions yet</h4><p class="ui-empty-state__text">No history versions have been captured for this submission.</p></div></td></tr>
+                  <tr><td colspan="7" class="empty-state">No history versions have been captured yet for this submission.</td></tr>
                 <?php endif; ?>
               </tbody>
             </table>
@@ -241,35 +235,7 @@ require_once __DIR__ . '/../backend/partials/header.php';
   <?php endforeach; ?>
 
   <?php if (!$rows): ?>
-    <div class="ui-empty-state" style="padding:32px;"><div class="ui-empty-state__icon">○</div><h3 class="ui-empty-state__title">No submissions yet</h3><p class="ui-empty-state__text">Once a leader submits a project, this page will show the current record and its full version history.</p></div>
+    <div class="card empty-state ui-empty-state" style="padding:32px;">No team submission is visible yet. Once a leader submits a project, this page will show the current record and its full version history.</div>
   <?php endif; ?>
-  <div class="ui-empty-state is-hidden" data-history-empty><div class="ui-empty-state__icon">○</div><h3 class="ui-empty-state__title">No submissions in this view</h3><p class="ui-empty-state__text">No submission entries matched the selected filter.</p></div>
 </section>
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-  var buttons = Array.prototype.slice.call(document.querySelectorAll('[data-history-filter]'));
-  var items = Array.prototype.slice.call(document.querySelectorAll('[data-history-item]'));
-  var empty = document.querySelector('[data-history-empty]');
-  if (!buttons.length || !items.length) return;
-  function apply(filter) {
-    var visible = 0;
-    items.forEach(function (item) {
-      var show = filter === 'all' || (item.getAttribute('data-status') || '') === filter;
-      item.classList.toggle('is-hidden', !show);
-      if (show) visible += 1;
-    });
-    buttons.forEach(function (button) {
-      var active = (button.getAttribute('data-history-filter') || 'all') === filter;
-      button.classList.toggle('is-active', active);
-    });
-    if (empty) empty.classList.toggle('is-hidden', visible > 0);
-  }
-  buttons.forEach(function (button) {
-    button.addEventListener('click', function () {
-      apply(button.getAttribute('data-history-filter') || 'all');
-    });
-  });
-  apply('all');
-});
-</script>
 <?php require_once __DIR__ . '/../backend/partials/footer.php'; ?>

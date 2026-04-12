@@ -7,7 +7,7 @@ require_role('admin');
 $admin = current_user();
 // If a single notification clicked from the topbar, mark it as read and jump to it
 if (isset($_GET['mark'])) {
-    $markId = (int) ($_GET['mark'] ?? 0);
+    $markId = (int) $_GET['mark'];
     if ($markId > 0) {
         mark_notification_read('admin', (int) $admin['id'], $markId);
         redirect_to('admin/notifications.php#notification-' . $markId);
@@ -37,15 +37,15 @@ $title = 'Notifications';
 $subtitle = 'Admin inbox for system activity, approvals, and lifecycle events';
 require_once __DIR__ . '/../backend/partials/header.php';
 ?>
-<div class="split-header ui-section__head">
+<div class="split-header">
   <div>
     <h3 class="section-title">Admin inbox</h3>
     <div class="muted small">Unread: <?= count_unread_notifications('admin', (int) $admin['id']) ?></div>
   </div>
-  <form method="post"><input type="hidden" name="_csrf" value="<?= h(csrf_token()) ?>"><input type="hidden" name="action" value="mark_all_read"><button class="btn btn-secondary ui-btn ui-btn--secondary" type="submit" data-notification-mark-all>Mark all as read</button></form>
+  <form method="post"><input type="hidden" name="_csrf" value="<?= h(csrf_token()) ?>"><input type="hidden" name="action" value="mark_all_read"><button class="btn btn-secondary" type="submit" data-notification-mark-all>Mark all as read</button></form>
 </div>
-<div class="card ui-panel-card" style="margin-top:18px;">
-  <form method="get" class="filter-row ui-filter-group">
+<div class="card" style="margin-top:18px;">
+  <form method="get" class="filter-row">
     <select name="state">
       <option value="">All states</option>
       <option value="unread" <?= selected($state, 'unread') ?>>Unread</option>
@@ -57,7 +57,7 @@ require_once __DIR__ . '/../backend/partials/header.php';
       <option value="success" <?= selected($type, 'success') ?>>Success</option>
       <option value="warning" <?= selected($type, 'warning') ?>>Warning</option>
     </select>
-    <button class="btn ui-btn ui-btn--primary" type="submit">Filter</button>
+    <button class="btn" type="submit">Filter</button>
   </form>
 </div>
 <div class="timeline-list" style="margin-top:18px;">
@@ -66,14 +66,14 @@ require_once __DIR__ . '/../backend/partials/header.php';
       <div class="notification-title-row">
         <strong><?= h($row['title']) ?></strong>
         <div class="table-actions">
-          <span class="ui-badge <?= $row['type'] === 'success' ? 'ui-badge--success' : ($row['type'] === 'warning' ? 'ui-badge--warning' : 'ui-badge--open') ?>"><?= h(ucfirst((string) $row['type'])) ?></span>
-          <?php if ((int) $row['is_read'] === 0): ?><form method="post"><input type="hidden" name="_csrf" value="<?= h(csrf_token()) ?>"><input type="hidden" name="action" value="mark_read"><input type="hidden" name="notification_id" value="<?= (int) $row['id'] ?>"><button class="btn btn-outline ui-btn ui-btn--ghost" type="submit" data-notification-mark="<?= (int) $row['id'] ?>">Mark read</button></form><?php endif; ?>
+          <?= status_badge($row['type']) ?>
+          <?php if ((int) $row['is_read'] === 0): ?><form method="post"><input type="hidden" name="_csrf" value="<?= h(csrf_token()) ?>"><input type="hidden" name="action" value="mark_read"><input type="hidden" name="notification_id" value="<?= (int) $row['id'] ?>"><button class="btn btn-outline" type="submit" data-notification-mark="<?= (int) $row['id'] ?>">Mark read</button></form><?php endif; ?>
         </div>
       </div>
       <p><?= h($row['message']) ?></p>
       <div class="muted small"><?= h($row['created_at']) ?></div>
     </div>
   <?php endforeach; ?>
-  <?php if (!$rows): ?><div class="ui-empty-state"><div class="ui-empty-state__icon">○</div><h3 class="ui-empty-state__title">No notifications found</h3><p class="ui-empty-state__text">No notifications matched your filters.</p></div><?php endif; ?>
+  <?php if (!$rows): ?><div class="card empty-state">No notifications matched your filters.</div><?php endif; ?>
 </div>
 <?php require_once __DIR__ . '/../backend/partials/footer.php'; ?>

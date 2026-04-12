@@ -70,8 +70,6 @@ require_once __DIR__ . '/../backend/partials/header.php';
     </div>
     <div class="student-history-actions">
       <a class="btn" href="<?= h(url('student/submit.php')) ?>">New submission</a>
-      <a class="btn btn-secondary" href="<?= h(url('student/export_my_submissions.php?format=xlsx')) ?>">Export Excel</a>
-      <a class="btn btn-outline" href="<?= h(url('student/export_my_submissions.php?format=csv')) ?>">Export CSV</a>
     </div>
   </div>
 

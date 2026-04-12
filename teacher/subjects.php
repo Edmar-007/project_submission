@@ -58,11 +58,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $mapStmt = $pdo->prepare('INSERT INTO section_subjects (section_id, subject_id) VALUES (?, ?)');
             foreach ($sectionIds as $sectionId) {
-                if ($sectionId > 0) {
-                    $mapStmt->execute([$sectionId, $subjectId]);
-                }
+                $mapStmt->execute([$sectionId, $subjectId]);
             }
-            log_action('teacher', (int) $teacher['id'], $action === 'save_subject' && (int) ($_POST['subject_id'] ?? 0) > 0 ? 'subject_update' : 'subject_create', 'subject', $subjectId, $name);
+            log_action('teacher', (int) $teacher['id'], (int) ($_POST['subject_id'] ?? 0) > 0 ? 'subject_update' : 'subject_create', 'subject', $subjectId, $name);
             $pdo->commit();
             set_flash('success', $message);
         } catch (Throwable $e) {
@@ -150,30 +148,23 @@ foreach ($sectionMapStmt->fetchAll() as $row) {
 $activeCount = count(array_filter($subjects, fn($row) => ($row['status'] ?? '') === 'active'));
 $archivedCount = count(array_filter($subjects, fn($row) => ($row['status'] ?? '') === 'archived'));
 $submissionTotal = array_sum(array_map(fn($row) => (int) $row['total_submissions'], $subjects));
-$subjectBadgeClass = static function (string $status): string {
-    $key = strtolower(trim($status));
-    if ($key === 'active') return 'ui-badge--open';
-    if ($key === 'inactive') return 'ui-badge--warning';
-    if ($key === 'archived') return 'ui-badge--muted';
-    return 'ui-badge--open';
-};
 $title = 'Teacher Subjects';
 $subtitle = 'Create, assign, update, and archive multi-section subjects from one workspace';
 require_once __DIR__ . '/../backend/partials/header.php';
 ?>
 <div class="kpi-grid ui-stat-grid">
-  <div class="kpi-card ui-stat-card"><span class="label ui-stat-card__label">Subjects</span><strong class="ui-stat-card__value"><?= count($subjects) ?></strong><span class="muted small ui-stat-card__hint">Owned by your account</span></div>
-  <div class="kpi-card ui-stat-card"><span class="label ui-stat-card__label">Active</span><strong class="ui-stat-card__value"><?= $activeCount ?></strong><span class="muted small ui-stat-card__hint">Currently visible to students</span></div>
-  <div class="kpi-card ui-stat-card"><span class="label ui-stat-card__label">Archived</span><strong class="ui-stat-card__value"><?= $archivedCount ?></strong><span class="muted small ui-stat-card__hint">Hidden from the main flow</span></div>
-  <div class="kpi-card ui-stat-card"><span class="label ui-stat-card__label">Submissions</span><strong class="ui-stat-card__value"><?= $submissionTotal ?></strong><span class="muted small ui-stat-card__hint">Across all your subjects</span></div>
+  <div class="kpi-card ui-stat-card"><span class="label">Subjects</span><strong><?= count($subjects) ?></strong><span class="muted small">Owned by your account</span></div>
+  <div class="kpi-card ui-stat-card"><span class="label">Active</span><strong><?= $activeCount ?></strong><span class="muted small">Currently visible to students</span></div>
+  <div class="kpi-card ui-stat-card"><span class="label">Archived</span><strong><?= $archivedCount ?></strong><span class="muted small">Hidden from the main flow</span></div>
+  <div class="kpi-card ui-stat-card"><span class="label">Submissions</span><strong><?= $submissionTotal ?></strong><span class="muted small">Across all your subjects</span></div>
 </div>
 
 <section class="workspace-shell ui-section">
-  <div class="workspace-head ui-section__head">
+  <div class="workspace-head">
     <div>
-      <div class="eyebrow ui-section__eyebrow">Teacher Subject Workspace</div>
-      <h2 class="ui-section__title">Manage subject cards instead of a table-first flow</h2>
-      <p class="muted ui-section__desc">Create a subject, assign one or many sections, reopen it later for edits, or archive it when the term is complete.</p>
+      <div class="eyebrow">Teacher Subject Workspace</div>
+      <h2>Manage subject cards instead of a table-first flow</h2>
+      <p class="muted">Create a subject, assign one or many sections, reopen it later for edits, or archive it when the term is complete.</p>
     </div>
     <div class="form-actions ui-action-row"><button class="btn ui-btn ui-btn--primary" type="button" data-open-modal="subject-create-modal">Create subject</button></div>
   </div>
@@ -182,24 +173,24 @@ require_once __DIR__ . '/../backend/partials/header.php';
     <?php foreach ($subjects as $subject): ?>
       <?php $locked = !empty($subject['teacher_submission_locked']); ?>
       <article class="card subject-workspace-card ui-subject-card">
-        <div class="split-header ui-subject-card__top">
+        <div class="split-header">
           <div>
-            <h3 class="section-title ui-subject-card__title"><?= h($subject['subject_name']) ?></h3>
-            <div class="muted small ui-subject-card__meta"><?= h($subject['subject_code']) ?> · <?= h($subject['sections'] ?: 'No sections assigned') ?></div>
+            <h3 class="section-title"><?= h($subject['subject_name']) ?></h3>
+            <div class="muted small"><?= h($subject['subject_code']) ?> · <?= h($subject['sections'] ?: 'No sections assigned') ?></div>
           </div>
-          <span class="ui-badge <?= h($subjectBadgeClass((string) ($subject['status'] ?? ''))) ?>"><?= h(ucfirst((string) $subject['status'])) ?></span>
+          <?= status_badge($subject['status']) ?>
         </div>
-        <p class="muted ui-subject-card__desc"><?= h($subject['description'] ?: 'No description provided yet.') ?></p>
-        <div class="workspace-stat-grid">
-          <div class="segment"><span class="muted small">Sections</span><strong><?= (int) $subject['total_sections'] ?></strong></div>
-          <div class="segment"><span class="muted small">Submissions</span><strong><?= (int) $subject['total_submissions'] ?></strong></div>
-          <div class="segment"><span class="muted small">Activities</span><strong><?= (int) $subject['total_activities'] ?></strong></div><div class="segment"><span class="muted small">Resources</span><strong><?= (int) $subject['total_resources'] ?></strong></div>
+        <p class="muted"><?= h($subject['description'] ?: 'No description provided yet.') ?></p>
+        <div class="workspace-stat-grid ui-stat-grid">
+          <div class="segment ui-stat-card"><span class="muted small">Sections</span><strong><?= (int) $subject['total_sections'] ?></strong></div>
+          <div class="segment ui-stat-card"><span class="muted small">Submissions</span><strong><?= (int) $subject['total_submissions'] ?></strong></div>
+          <div class="segment ui-stat-card"><span class="muted small">Activities</span><strong><?= (int) $subject['total_activities'] ?></strong></div><div class="segment ui-stat-card"><span class="muted small">Resources</span><strong><?= (int) $subject['total_resources'] ?></strong></div>
         </div>
-        <div class="ui-chip-row" style="margin-top:12px;"><?= deadline_badge_html($subject) ?></div>
+        <div style="margin-top:12px;"><?= deadline_badge_html($subject) ?></div>
         <?php if ($locked): ?><div class="callout" style="margin-top:12px;"><strong>Manual lock active.</strong><div class="muted small"><?= h($subject['teacher_submission_lock_note'] ?: 'Teacher closed submissions for this subject.') ?></div></div><?php endif; ?>
         <div class="form-actions ui-action-row" style="margin-top:16px;">
-          <a class="btn btn-secondary ui-btn ui-btn--primary" href="<?= h(url('teacher/subject_view.php?id=' . (int) $subject['id'])) ?>">Open workspace</a>
-          <button class="btn ui-btn ui-btn--secondary" type="button" data-open-modal="create-activity-<?= (int) $subject['id'] ?>">Add activity</button>
+          <a class="btn btn-secondary ui-btn ui-btn--secondary" href="<?= h(url('teacher/subject_view.php?id=' . (int) $subject['id'])) ?>">Open workspace</a>
+          <button class="btn ui-btn ui-btn--primary" type="button" data-open-modal="create-activity-<?= (int) $subject['id'] ?>">Add submission</button>
           <button class="btn btn-outline ui-btn ui-btn--ghost" type="button" data-open-modal="subject-edit-<?= (int) $subject['id'] ?>">Edit</button>
           <?php if (($subject['status'] ?? '') !== 'archived'): ?>
             <form method="post" class="inline">
@@ -212,21 +203,21 @@ require_once __DIR__ . '/../backend/partials/header.php';
         </div>
       </article>
     <?php endforeach; ?>
-    <?php if (!$subjects): ?><div class="ui-empty-state"><div class="ui-empty-state__icon">○</div><h3 class="ui-empty-state__title">No subjects yet</h3><p class="ui-empty-state__text">Create your first subject to start assigning sections and collecting submissions.</p></div><?php endif; ?>
+    <?php if (!$subjects): ?><div class="card empty-state ui-empty-state">No subject yet. Create your first subject to start assigning sections and collecting submissions.</div><?php endif; ?>
   </div>
 </section>
 
-<div class="modal-backdrop" data-modal="subject-create-modal" aria-hidden="true">
-  <div class="modal-card modal-lg subject-modal-card" role="dialog" aria-modal="true" aria-labelledby="subject-create-title">
-    <div class="modal-head">
+<div class="modal-backdrop ui-modal" data-modal="subject-create-modal" aria-hidden="true">
+  <div class="modal-card modal-lg subject-modal-card ui-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="subject-create-title">
+    <div class="modal-head ui-modal__header">
       <div>
         <span class="pill soft">Create subject</span>
         <h3 id="subject-create-title">New subject</h3>
         <p class="muted">Create the subject, set its visibility, and assign one or many sections in one clean flow.</p>
       </div>
-      <button type="button" class="icon-btn modal-close" data-close-modal aria-label="Close create subject modal">✕</button>
+      <button type="button" class="icon-btn modal-close ui-btn ui-btn--ghost" data-close-modal aria-label="Close create subject modal">✕</button>
     </div>
-    <form method="post" class="form-grid modal-form-shell" data-modal-form="subject">
+    <form method="post" class="form-grid modal-form-shell ui-modal__body ui-form-shell ui-form-grid" data-modal-form="subject">
       <input type="hidden" name="_csrf" value="<?= h(csrf_token()) ?>">
       <input type="hidden" name="action" value="save_subject">
       <div class="full modal-section-card modal-section-intro">
@@ -236,10 +227,10 @@ require_once __DIR__ . '/../backend/partials/header.php';
         </div>
         <span class="pill soft"><?= count($sections) ?> section<?= count($sections) === 1 ? '' : 's' ?> available</span>
       </div>
-      <div><label>Subject code</label><input name="subject_code" placeholder="Example: IM101" required></div>
-      <div><label>Subject name</label><input name="subject_name" placeholder="Example: Information Management" required></div>
-      <div class="full"><label>Description</label><textarea name="description" rows="5" placeholder="Describe the subject goals, expected outputs, or class requirements"></textarea></div>
-      <div><label>Status</label><select name="status"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+      <div><label>Subject code</label><input class="ui-input" name="subject_code" placeholder="Example: IM101" required></div>
+      <div><label>Subject name</label><input class="ui-input" name="subject_name" placeholder="Example: Information Management" required></div>
+      <div class="full"><label>Description</label><textarea class="ui-textarea" name="description" rows="5" placeholder="Describe the subject goals, expected outputs, or class requirements"></textarea></div>
+      <div><label>Status</label><select class="ui-select" name="status"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
       <div class="full modal-section-card">
         <div class="modal-section-heading">
           <div>
@@ -249,23 +240,23 @@ require_once __DIR__ . '/../backend/partials/header.php';
         </div>
         <div class="checkbox-grid"><?php foreach ($sections as $section): ?><label class="checkbox-card"><input type="checkbox" name="section_ids[]" value="<?= (int) $section['id'] ?>"> <span><strong><?= h($section['section_name']) ?></strong><small><?= h(($section['school_year'] ?? '') . ' · ' . ($section['semester'] ?? '')) ?></small></span></label><?php endforeach; ?></div>
       </div>
-      <div class="full form-actions modal-form-actions"><button class="btn" type="submit">Save subject</button><button class="btn btn-outline" type="button" data-close-modal>Cancel</button></div>
+      <div class="full form-actions modal-form-actions ui-action-row"><button class="btn ui-btn ui-btn--primary" type="submit">Save subject</button><button class="btn btn-outline ui-btn ui-btn--ghost" type="button" data-close-modal>Cancel</button></div>
     </form>
   </div>
 </div>
 
 <?php foreach ($subjects as $subject): ?>
-<div class="modal-backdrop" data-modal="subject-edit-<?= (int) $subject['id'] ?>" aria-hidden="true">
-  <div class="modal-card modal-lg subject-modal-card" role="dialog" aria-modal="true" aria-labelledby="subject-edit-title-<?= (int) $subject['id'] ?>">
-    <div class="modal-head">
+<div class="modal-backdrop ui-modal" data-modal="subject-edit-<?= (int) $subject['id'] ?>" aria-hidden="true">
+  <div class="modal-card modal-lg subject-modal-card ui-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="subject-edit-title-<?= (int) $subject['id'] ?>">
+    <div class="modal-head ui-modal__header">
       <div>
         <span class="pill soft">Edit subject</span>
         <h3 id="subject-edit-title-<?= (int) $subject['id'] ?>"><?= h($subject['subject_name']) ?></h3>
         <p class="muted">Update details, visibility, and section mapping without leaving the workspace.</p>
       </div>
-      <button type="button" class="icon-btn modal-close" data-close-modal aria-label="Close edit subject modal">✕</button>
+      <button type="button" class="icon-btn modal-close ui-btn ui-btn--ghost" data-close-modal aria-label="Close edit subject modal">✕</button>
     </div>
-    <form method="post" class="form-grid modal-form-shell" data-modal-form="subject">
+    <form method="post" class="form-grid modal-form-shell ui-modal__body ui-form-shell ui-form-grid" data-modal-form="subject">
       <input type="hidden" name="_csrf" value="<?= h(csrf_token()) ?>">
       <input type="hidden" name="action" value="save_subject">
       <input type="hidden" name="subject_id" value="<?= (int) $subject['id'] ?>">
@@ -276,10 +267,10 @@ require_once __DIR__ . '/../backend/partials/header.php';
         </div>
         <?= status_badge($subject['status']) ?>
       </div>
-      <div><label>Subject code</label><input name="subject_code" required value="<?= h($subject['subject_code']) ?>"></div>
-      <div><label>Subject name</label><input name="subject_name" required value="<?= h($subject['subject_name']) ?>"></div>
-      <div class="full"><label>Description</label><textarea name="description" rows="5"><?= h($subject['description']) ?></textarea></div>
-      <div><label>Status</label><select name="status"><option value="active" <?= selected($subject['status'], 'active') ?>>Active</option><option value="inactive" <?= selected($subject['status'], 'inactive') ?>>Inactive</option><option value="archived" <?= selected($subject['status'], 'archived') ?>>Archived</option></select></div>
+      <div><label>Subject code</label><input class="ui-input" name="subject_code" required value="<?= h($subject['subject_code']) ?>"></div>
+      <div><label>Subject name</label><input class="ui-input" name="subject_name" required value="<?= h($subject['subject_name']) ?>"></div>
+      <div class="full"><label>Description</label><textarea class="ui-textarea" name="description" rows="5"><?= h($subject['description']) ?></textarea></div>
+      <div><label>Status</label><select class="ui-select" name="status"><option value="active" <?= selected($subject['status'], 'active') ?>>Active</option><option value="inactive" <?= selected($subject['status'], 'inactive') ?>>Inactive</option><option value="archived" <?= selected($subject['status'], 'archived') ?>>Archived</option></select></div>
       <div class="full modal-section-card">
         <div class="modal-section-heading">
           <div>
@@ -289,24 +280,24 @@ require_once __DIR__ . '/../backend/partials/header.php';
         </div>
         <div class="checkbox-grid"><?php foreach ($sections as $section): ?><label class="checkbox-card"><input type="checkbox" name="section_ids[]" value="<?= (int) $section['id'] ?>" <?= in_array((int) $section['id'], $sectionMap[(int) $subject['id']] ?? [], true) ? 'checked' : '' ?>> <span><strong><?= h($section['section_name']) ?></strong><small><?= h(($section['school_year'] ?? '') . ' · ' . ($section['semester'] ?? '')) ?></small></span></label><?php endforeach; ?></div>
       </div>
-      <div class="full form-actions modal-form-actions"><button class="btn" type="submit">Update subject</button><button class="btn btn-outline" type="button" data-close-modal>Cancel</button></div>
+      <div class="full form-actions modal-form-actions ui-action-row"><button class="btn ui-btn ui-btn--primary" type="submit">Update subject</button><button class="btn btn-outline ui-btn ui-btn--ghost" type="button" data-close-modal>Cancel</button></div>
     </form>
   </div>
 </div>
-  <div class="modal-backdrop" data-modal="create-activity-<?= (int) $subject['id'] ?>" aria-hidden="true">
-    <div class="modal-overlay"></div>
+  <div class="modal-backdrop ui-modal" data-modal="create-activity-<?= (int) $subject['id'] ?>" aria-hidden="true">
+    <div class="modal-overlay" data-close-modal></div>
     <div class="modal-container" role="dialog" aria-modal="true" aria-labelledby="create-activity-title-<?= (int) $subject['id'] ?>">
-      <div class="modal-card">
-        <div class="modal-head">
+      <div class="modal-card ui-modal__dialog">
+        <div class="modal-head ui-modal__header">
           <div>
             <span class="pill soft">New submission</span>
             <h3 id="create-activity-title-<?= (int) $subject['id'] ?>">Quick create — <?= h($subject['subject_name']) ?></h3>
             <p class="muted">Create a focused submission checkpoint. You can refine restrictions in the subject workspace afterwards.</p>
           </div>
-          <button type="button" class="icon-btn modal-close" data-close-modal aria-label="Close create activity modal">✕</button>
+          <button type="button" class="icon-btn modal-close ui-btn ui-btn--ghost" data-close-modal aria-label="Close create activity modal">✕</button>
         </div>
 
-        <form id="quick-create-activity-<?= (int) $subject['id'] ?>" method="post" class="modal-body" novalidate>
+        <form id="quick-create-activity-<?= (int) $subject['id'] ?>" method="post" class="modal-body ui-modal__body ui-form-shell" novalidate>
           <input type="hidden" name="_csrf" value="<?= h(csrf_token()) ?>">
           <input type="hidden" name="action" value="quick_create_activity">
           <input type="hidden" name="subject_id" value="<?= (int) $subject['id'] ?>">
@@ -314,39 +305,39 @@ require_once __DIR__ . '/../backend/partials/header.php';
           <div class="form-grid" style="grid-template-columns: 1fr;">
             <div>
               <label>Title</label>
-              <input name="title" placeholder="Proposal submission" required data-modal-focus>
+              <input class="ui-input" name="title" placeholder="Proposal submission" required data-modal-focus>
               <div class="small muted" style="margin-top:6px;">Short, descriptive title students will see (e.g., Proposal, Demo, Final Upload).</div>
             </div>
 
             <div class="full">
               <label>Description</label>
-              <textarea name="description" placeholder="Optional instructions or notes" rows="4"></textarea>
+              <textarea class="ui-textarea" name="description" placeholder="Optional instructions or notes" rows="4"></textarea>
             </div>
 
             <div class="quick-grid">
               <div>
                 <label>Deadline</label>
-                <input type="datetime-local" name="deadline_at">
+                <input class="ui-input" type="datetime-local" name="deadline_at">
                 <div class="small muted">Leave empty for no deadline.</div>
               </div>
               <div>
                 <label>Submission mode</label>
-                <select name="submission_mode"><option value="team">Team</option><option value="individual">Individual</option></select>
+                <select class="ui-select" name="submission_mode"><option value="team">Team</option><option value="individual">Individual</option></select>
               </div>
             </div>
 
             <div class="quick-grid">
               <div>
                 <label>Min members</label>
-                <input type="number" name="min_members" min="1" value="1">
+                <input class="ui-input" type="number" name="min_members" min="1" value="1">
               </div>
               <div>
                 <label>Max members</label>
-                <input type="number" name="max_members" min="1" value="5">
+                <input class="ui-input" type="number" name="max_members" min="1" value="5">
               </div>
               <div>
                 <label>Max resubmissions</label>
-                <input type="number" name="max_resubmissions" min="1" value="1">
+                <input class="ui-input" type="number" name="max_resubmissions" min="1" value="1">
               </div>
             </div>
 
@@ -365,9 +356,9 @@ require_once __DIR__ . '/../backend/partials/header.php';
         </form>
 
         <div class="modal-footer">
-          <div class="modal-actions">
-            <button class="btn" type="submit" form="quick-create-activity-<?= (int) $subject['id'] ?>">Create submission</button>
-            <button class="btn btn-outline" type="button" data-close-modal>Cancel</button>
+          <div class="modal-actions ui-action-row">
+            <button class="btn ui-btn ui-btn--primary" type="submit" form="quick-create-activity-<?= (int) $subject['id'] ?>">Create submission</button>
+            <button class="btn btn-outline ui-btn ui-btn--ghost" type="button" data-close-modal>Cancel</button>
           </div>
         </div>
       </div>

@@ -4,6 +4,10 @@ define('BACKEND_HELPERS_MAILER_PHP_LOADED', true);
 
 require_once __DIR__ . '/../config/mail.php';
 
+if (!defined('APP_ROOT')) {
+    define('APP_ROOT', dirname(__DIR__, 2));
+}
+
 if (!function_exists('mail_log_path')) {
 function mail_log_path(): string {
     $dir = APP_ROOT . '/backend/logs';
@@ -134,7 +138,7 @@ function send_system_mail(string $to, string $subject, string $body): bool {
     }
 
     try {
-        if ((string) MAIL_HOST !== '' && ((string) MAIL_USERNAME !== '' || (string) MAIL_PASSWORD !== '')) {
+        if ((string) MAIL_USERNAME !== '' || (string) MAIL_PASSWORD !== '') {
             $ok = send_system_mail_via_smtp($to, $subject, $body);
             mail_write_log('MAIL_SENT_SMTP to=' . $to . ' subject=' . $subject);
             return $ok;

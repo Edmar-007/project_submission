@@ -1,0 +1,53 @@
+﻿DEEP SCAN START 04/12/2026 20:47:54
+C:\laragon\www\project_submission\backend\config\auth.php:213:                $pdo->exec('ALTER TABLE ' . $table . ' ADD COLUMN avatar_path VARCHAR(255) NULL AFTER password_hash');
+C:\laragon\www\project_submission\backend\config\auth.php:227:        if ($ddl) { $pdo->exec('ALTER TABLE subjects ' . implode(', ', $ddl)); }
+C:\laragon\www\project_submission\backend\config\auth.php:236:        if ($ssDdl) { $pdo->exec('ALTER TABLE section_subjects ' . implode(', ', $ssDdl)); }
+C:\laragon\www\project_submission\backend\config\auth.php:238:        $pdo->exec('CREATE TABLE IF NOT EXISTS subject_resources (id INT AUTO_INCREMENT PRIMARY KEY, subject_id INT NOT NULL, title VARCHAR(255) NOT NULL, file_path VARCHAR(255) NOT NULL, is_visible_to_students TINYINT(1) NOT NULL DEFAULT 1, created_by_teacher_id INT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, CONSTRAINT fk_subject_resources_subject FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE ON UPDATE CASCADE, CONSTRAINT fk_subject_resources_teacher FOREIGN KEY (created_by_teacher_id) REFERENCES teachers(id) ON DELETE CASCADE ON UPDATE CASCADE)');
+C:\laragon\www\project_submission\backend\config\auth.php:239:        $pdo->exec("CREATE TABLE IF NOT EXISTS backup_runs (id INT AUTO_INCREMENT PRIMARY KEY, run_key VARCHAR(120) NOT NULL UNIQUE, zip_path VARCHAR(255) NOT NULL, manifest_path VARCHAR(255) NULL, uploaded_to_drive TINYINT(1) NOT NULL DEFAULT 0, drive_file_id VARCHAR(255) NULL, status ENUM('success','failed') NOT NULL DEFAULT 'success', notes TEXT NULL, created_by_admin_id INT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
+C:\laragon\www\project_submission\backend\config\auth.php:258:                $pdo->exec('ALTER TABLE ' . $table . ' ADD COLUMN avatar_path VARCHAR(255) NULL AFTER password_hash');
+C:\laragon\www\project_submission\backend\helpers\query.php:10:    $pdo->exec("CREATE TABLE IF NOT EXISTS submission_activities (
+C:\laragon\www\project_submission\backend\helpers\query.php:40:    $pdo->exec("CREATE TABLE IF NOT EXISTS submission_activity_sections (
+C:\laragon\www\project_submission\backend\helpers\query.php:79:            if (!isset($existing[$column])) { $pdo->exec($ddl); }
+C:\laragon\www\project_submission\backend\helpers\query.php:87:            try { $pdo->exec('ALTER TABLE teams DROP INDEX uniq_leader_subject_team'); } catch (Throwable $e) {}
+C:\laragon\www\project_submission\backend\helpers\query.php:90:            try { $pdo->exec('ALTER TABLE teams ADD UNIQUE KEY uniq_leader_activity_team (leader_student_id, activity_id)'); } catch (Throwable $e) {}
+C:\laragon\www\project_submission\backend\helpers\query.php:92:        try { $pdo->exec('ALTER TABLE teams ADD CONSTRAINT fk_teams_activity FOREIGN KEY (activity_id) REFERENCES submission_activities(id) ON DELETE CASCADE ON UPDATE CASCADE'); } catch (Throwable $e) {}
+C:\laragon\www\project_submission\backend\helpers\query.php:98:            try { $pdo->exec('ALTER TABLE submissions DROP INDEX uniq_team_subject'); } catch (Throwable $e) {}
+C:\laragon\www\project_submission\backend\helpers\query.php:101:            try { $pdo->exec('ALTER TABLE submissions DROP INDEX uniq_team_activity'); } catch (Throwable $e) {}
+C:\laragon\www\project_submission\backend\helpers\query.php:104:            try { $pdo->exec('ALTER TABLE submissions ADD INDEX idx_team_activity_attempt (team_id, activity_id, attempt_no)'); } catch (Throwable $e) {}
+C:\laragon\www\project_submission\backend\helpers\query.php:107:            try { $pdo->exec('ALTER TABLE submissions ADD INDEX idx_student_activity_attempt (student_id, activity_id, attempt_no)'); } catch (Throwable $e) {}
+C:\laragon\www\project_submission\backend\helpers\query.php:109:        try { $pdo->exec('ALTER TABLE submissions ADD CONSTRAINT fk_submissions_activity FOREIGN KEY (activity_id) REFERENCES submission_activities(id) ON DELETE SET NULL ON UPDATE CASCADE'); } catch (Throwable $e) {}
+C:\laragon\www\project_submission\backend\helpers\query.php:113:        try { $pdo->exec('ALTER TABLE submission_members ADD CONSTRAINT fk_submission_members_student FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE SET NULL ON UPDATE CASCADE'); } catch (Throwable $e) {}
+C:\laragon\www\project_submission\backend\helpers\query.php:114:        try { $pdo->exec('ALTER TABLE submission_members ADD INDEX idx_submission_members_student (student_id)'); } catch (Throwable $e) {}
+C:\laragon\www\project_submission\backend\helpers\query.php:641:    pdo()->exec('CREATE TABLE IF NOT EXISTS submission_history (
+C:\laragon\www\project_submission\backend\openrouter\openrouter.php:55:        $response = curl_exec($ch);
+C:\laragon\www\project_submission\backend\openrouter\openrouter.php:59:        curl_close($ch);
+C:\laragon\www\project_submission\project\backend\config\app.php:86:        $payload = base64_decode(substr($value, 4), true);
+C:\laragon\www\project_submission\project\backend\config\app.php:97:    $decoded = base64_decode($value, true);
+C:\laragon\www\project_submission\project\backend\config\auth.php:211:                $pdo->exec('ALTER TABLE ' . $table . ' ADD COLUMN avatar_path VARCHAR(255) NULL AFTER password_hash');
+C:\laragon\www\project_submission\project\backend\config\auth.php:225:        if ($ddl) { $pdo->exec('ALTER TABLE subjects ' . implode(', ', $ddl)); }
+C:\laragon\www\project_submission\project\backend\config\auth.php:234:        if ($ssDdl) { $pdo->exec('ALTER TABLE section_subjects ' . implode(', ', $ssDdl)); }
+C:\laragon\www\project_submission\project\backend\config\auth.php:236:        $pdo->exec('CREATE TABLE IF NOT EXISTS subject_resources (id INT AUTO_INCREMENT PRIMARY KEY, subject_id INT NOT NULL, title VARCHAR(255) NOT NULL, file_path VARCHAR(255) NOT NULL, is_visible_to_students TINYINT(1) NOT NULL DEFAULT 1, created_by_teacher_id INT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, CONSTRAINT fk_subject_resources_subject FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE ON UPDATE CASCADE, CONSTRAINT fk_subject_resources_teacher FOREIGN KEY (created_by_teacher_id) REFERENCES teachers(id) ON DELETE CASCADE ON UPDATE CASCADE)');
+C:\laragon\www\project_submission\project\backend\config\auth.php:237:        $pdo->exec("CREATE TABLE IF NOT EXISTS backup_runs (id INT AUTO_INCREMENT PRIMARY KEY, run_key VARCHAR(120) NOT NULL UNIQUE, zip_path VARCHAR(255) NOT NULL, manifest_path VARCHAR(255) NULL, uploaded_to_drive TINYINT(1) NOT NULL DEFAULT 0, drive_file_id VARCHAR(255) NULL, status ENUM('success','failed') NOT NULL DEFAULT 'success', notes TEXT NULL, created_by_admin_id INT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
+C:\laragon\www\project_submission\project\backend\config\auth.php:256:                $pdo->exec('ALTER TABLE ' . $table . ' ADD COLUMN avatar_path VARCHAR(255) NULL AFTER password_hash');
+C:\laragon\www\project_submission\project\backend\helpers\query.php:8:    $pdo->exec("CREATE TABLE IF NOT EXISTS submission_activities (
+C:\laragon\www\project_submission\project\backend\helpers\query.php:38:    $pdo->exec("CREATE TABLE IF NOT EXISTS submission_activity_sections (
+C:\laragon\www\project_submission\project\backend\helpers\query.php:61:            if (!isset($existing[$column])) { $pdo->exec($ddl); }
+C:\laragon\www\project_submission\project\backend\helpers\query.php:68:        try { $pdo->exec('ALTER TABLE teams DROP INDEX uniq_leader_subject_team'); } catch (Throwable $e) {}
+C:\laragon\www\project_submission\project\backend\helpers\query.php:71:        try { $pdo->exec('ALTER TABLE teams ADD UNIQUE KEY uniq_leader_activity_team (leader_student_id, activity_id)'); } catch (Throwable $e) {}
+C:\laragon\www\project_submission\project\backend\helpers\query.php:73:    try { $pdo->exec('ALTER TABLE teams ADD CONSTRAINT fk_teams_activity FOREIGN KEY (activity_id) REFERENCES submission_activities(id) ON DELETE CASCADE ON UPDATE CASCADE'); } catch (Throwable $e) {}
+C:\laragon\www\project_submission\project\backend\helpers\query.php:78:        try { $pdo->exec('ALTER TABLE submissions DROP INDEX uniq_team_subject'); } catch (Throwable $e) {}
+C:\laragon\www\project_submission\project\backend\helpers\query.php:81:        try { $pdo->exec('ALTER TABLE submissions ADD UNIQUE KEY uniq_team_activity (team_id, activity_id)'); } catch (Throwable $e) {}
+C:\laragon\www\project_submission\project\backend\helpers\query.php:83:    try { $pdo->exec('ALTER TABLE submissions ADD CONSTRAINT fk_submissions_activity FOREIGN KEY (activity_id) REFERENCES submission_activities(id) ON DELETE SET NULL ON UPDATE CASCADE'); } catch (Throwable $e) {}
+C:\laragon\www\project_submission\project\backend\helpers\query.php:84:    try { $pdo->exec('ALTER TABLE submission_members ADD CONSTRAINT fk_submission_members_student FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE SET NULL ON UPDATE CASCADE'); } catch (Throwable $e) {}
+C:\laragon\www\project_submission\project\backend\helpers\query.php:85:    try { $pdo->exec('ALTER TABLE submission_members ADD INDEX idx_submission_members_student (student_id)'); } catch (Throwable $e) {}
+C:\laragon\www\project_submission\project\backend\helpers\query.php:447:    pdo()->exec('CREATE TABLE IF NOT EXISTS submission_history (
+
+=== DUPLICATE FUNCTIONS ===
+
+
+=== SHORT TAGS ===
+
+
+=== BOM FILES ===
+
+DEEP SCAN COMPLETE: C:\laragon\www\project_submission\deep_scan_output.txt

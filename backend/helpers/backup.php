@@ -2,6 +2,10 @@
 if (defined('BACKEND_HELPERS_BACKUP_PHP_LOADED')) { return; }
 define('BACKEND_HELPERS_BACKUP_PHP_LOADED', true);
 
+if (!defined('APP_ROOT')) {
+    define('APP_ROOT', dirname(__DIR__, 2));
+}
+
 if (!function_exists('backup_dump_sql')) {
 function backup_dump_sql(PDO $pdo): string {
     $tables = $pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);

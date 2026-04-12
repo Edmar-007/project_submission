@@ -66,10 +66,6 @@ require_once __DIR__ . '/../backend/partials/header.php';
       <div class="eyebrow">Teacher review queue</div>
       <h2>Review faster with cards or a compact table</h2>
       <p class="muted">Search instantly, switch views, and jump into grading with fewer clicks.</p>
-      <div class="form-actions" style="margin-top:10px;">
-        <a class="btn" href="<?= h(url('teacher/export_submission.php?' . http_build_query(['format' => 'xlsx', 'subject_id' => $filterSubject, 'status' => $filterStatus]))) ?>">Export Excel</a>
-        <a class="btn btn-secondary" href="<?= h(url('teacher/export_submission.php?' . http_build_query(['format' => 'csv', 'subject_id' => $filterSubject, 'status' => $filterStatus]))) ?>">Export CSV</a>
-      </div>
     </div>
     <div class="submission-view-switch" role="tablist" aria-label="Submission layout">
       <button type="button" class="submission-view-btn active" data-submission-view-btn="cards" aria-pressed="true">Cards</button>
@@ -136,6 +132,7 @@ require_once __DIR__ . '/../backend/partials/header.php';
           </div>
           <div class="submission-card-actions">
             <a class="btn" href="<?= h(url('teacher/submission_view.php?id=' . (int) $row['id'])) ?>">Review</a>
+            <a class="btn btn-outline" href="<?= h(url('teacher/print_submission.php?id=' . (int) $row['id'])) ?>" target="_blank" rel="noopener">Print</a>
           </div>
         </div>
 
@@ -205,6 +202,7 @@ require_once __DIR__ . '/../backend/partials/header.php';
             <td data-label="Actions">
               <div class="table-actions">
                 <a class="btn" href="<?= h(url('teacher/submission_view.php?id=' . (int) $row['id'])) ?>">Review</a>
+                <a class="btn btn-secondary" href="<?= h(url('teacher/print_submission.php?id=' . (int) $row['id'])) ?>" target="_blank" rel="noopener">Print</a>
               </div>
             </td>
           </tr>

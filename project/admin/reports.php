@@ -13,6 +13,27 @@ if ($filterSection) { $where[] = 'sub.section_id = ?'; $params[] = $filterSectio
 if ($filterSubject) { $where[] = 'sub.subject_id = ?'; $params[] = $filterSubject; }
 if ($filterStatus !== '') { $where[] = 'sub.status = ?'; $params[] = $filterStatus; }
 $sqlWhere = $where ? ' WHERE ' . implode(' AND ', $where) : '';
+if (isset($_GET['export'])) {
+    $export = $_GET['export'];
+    if ($export === 'students') {
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename="students_report.csv"');
+        $out = fopen('php://output', 'w');
+        fputcsv($out, ['Student ID','Full Name','Email','Section','Status','Can Submit']);
+        foreach ($pdo->query('SELECT st.student_id, st.full_name, st.email, sec.section_name, st.account_status, st.can_submit FROM students st JOIN sections sec ON sec.id = st.section_id ORDER BY st.full_name') as $row) { fputcsv($out, $row); }
+        fclose($out); exit;
+    }
+    if ($export === 'submissions') {
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename="submissions_report.csv"');
+        $out = fopen('php://output', 'w');
+        fputcsv($out, ['Student','Student ID','Section','Subject','System','Status','Grade','Submitted At']);
+        $stmt = $pdo->prepare('SELECT st.full_name, st.student_id, sec.section_name, subj.subject_name, sub.assigned_system, sub.status, sub.grade, sub.submitted_at FROM submissions sub JOIN students st ON st.id = sub.student_id JOIN sections sec ON sec.id = sub.section_id JOIN subjects subj ON subj.id = sub.subject_id' . $sqlWhere . ' ORDER BY sub.submitted_at DESC');
+        $stmt->execute($params);
+        foreach ($stmt->fetchAll() as $row) { fputcsv($out, $row); }
+        fclose($out); exit;
+    }
+}
 $totals = [
     'students' => (int) $pdo->query('SELECT COUNT(*) FROM students')->fetchColumn(),
     'teachers' => (int) $pdo->query('SELECT COUNT(*) FROM teachers')->fetchColumn(),
@@ -45,10 +66,8 @@ require_once __DIR__ . '/../backend/partials/header.php';
       <p class="muted mb-0">Use the filters below, then export directly from this same section.</p>
     </div>
     <div class="module-actions">
-      <a class="btn" href="<?= h(url('admin/export_report.php?' . http_build_query(['type' => 'submissions', 'format' => 'xlsx', 'section_id' => $filterSection, 'subject_id' => $filterSubject, 'status' => $filterStatus]))) ?>"><i class="bi bi-file-earmark-spreadsheet"></i> Export Excel</a>
-      <a class="btn btn-secondary" href="<?= h(url('admin/export_report.php?' . http_build_query(['type' => 'submissions', 'format' => 'csv', 'section_id' => $filterSection, 'subject_id' => $filterSubject, 'status' => $filterStatus]))) ?>"><i class="bi bi-download"></i> Export CSV</a>
-      <a class="btn btn-outline" href="<?= h(url('admin/export_report.php?type=students&format=xlsx')) ?>"><i class="bi bi-person-lines-fill"></i> Students</a>
-      <a class="btn btn-outline" href="<?= h(url('admin/export_report.php?type=teams&format=xlsx')) ?>"><i class="bi bi-people"></i> Teams</a>
+      <a class="btn btn-outline" href="<?= h(url('admin/reports.php?export=students')) ?>"><i class="bi bi-download"></i> Export Students</a>
+      <a class="btn" href="<?= h(url('admin/reports.php?' . http_build_query(['export' => 'submissions', 'section_id' => $filterSection, 'subject_id' => $filterSubject, 'status' => $filterStatus]))) ?>"><i class="bi bi-file-earmark-spreadsheet"></i> Export Filtered CSV</a>
     </div>
   </div>
   <div class="table-toolbar">

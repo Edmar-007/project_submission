@@ -4,6 +4,9 @@ define('FILE_STUDENT_SUBMIT_PHP_LOADED', true);
 
 require_once __DIR__ . '/../backend/config/app.php';
 require_once __DIR__ . '/../backend/helpers/uploads.php';
+if (!defined('APP_ROOT')) {
+    define('APP_ROOT', dirname(__DIR__));
+}
 require_role('student');
 $student = current_user();
 $allowed = $student['account_status'] === 'active' && (int) $student['can_submit'] === 1;
@@ -192,7 +195,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (!empty($memberRow['email']) && filter_var($memberRow['email'], FILTER_VALIDATE_EMAIL)) {
                         require_once __DIR__ . '/../backend/helpers/mailer.php';
                         $mailSubject = 'Team submission update — ' . ($selectedActivity['title'] ?? 'Project');
-                        $mailBody = "Hello " . ($memberRow['full_name'] ?? 'Student') . ",\n\n" . $student['full_name'] . " submitted your team project for '" . ($selectedActivity['title'] ?? '') . "' in " . ($selectedActivity['subject_name'] ?? '') . ".\n\nYou can view the submission in your student portal: " . url('student/my_submissions.php') . "\n\nRegards,\n" . (MAIL_FROM_NAME ?? 'Course System');
+                        $mailBody = "Hello " . ($memberRow['full_name'] ?? 'Student') . ",\n\n" . $student['full_name'] . " submitted your team project for '" . ($selectedActivity['title'] ?? '') . "' in " . ($selectedActivity['subject_name'] ?? '') . ".\n\nYou can view the submission in your student portal: " . url('student/my_submissions.php') . "\n\nRegards,\n" . MAIL_FROM_NAME;
                         @send_system_mail($memberRow['email'], $mailSubject, $mailBody);
                     }
                 }
@@ -209,7 +212,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           if (!empty($teacherRow['email']) && filter_var($teacherRow['email'], FILTER_VALIDATE_EMAIL)) {
             require_once __DIR__ . '/../backend/helpers/mailer.php';
             $mailSubject = 'New project submission: ' . ($selectedActivity['title'] ?? 'Activity');
-            $mailBody = "Hello " . ($teacherRow['full_name'] ?? 'Instructor') . ",\n\nA team has submitted a project for '" . ($selectedActivity['title'] ?? '') . "' in " . ($selectedActivity['subject_name'] ?? '') . ".\n\nView it here: " . url('teacher/submissions.php') . "\n\nRegards,\n" . (MAIL_FROM_NAME ?? 'Course System');
+            $mailBody = "Hello " . ($teacherRow['full_name'] ?? 'Instructor') . ",\n\nA team has submitted a project for '" . ($selectedActivity['title'] ?? '') . "' in " . ($selectedActivity['subject_name'] ?? '') . ".\n\nView it here: " . url('teacher/submissions.php') . "\n\nRegards,\n" . MAIL_FROM_NAME;
             @send_system_mail($teacherRow['email'], $mailSubject, $mailBody);
           }
         } catch (Throwable $e) { }
@@ -219,7 +222,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!empty($student['email']) && filter_var($student['email'], FILTER_VALIDATE_EMAIL)) {
           require_once __DIR__ . '/../backend/helpers/mailer.php';
           $mailSubject = 'Submission received — ' . ($selectedActivity['title'] ?? 'Project');
-          $mailBody = "Hello " . ($student['full_name'] ?? 'Student') . ",\n\nYour submission for '" . ($selectedActivity['title'] ?? '') . "' has been received successfully. You can view your submission here: " . url('student/my_submissions.php') . "\n\nRegards,\n" . (MAIL_FROM_NAME ?? 'Course System');
+          $mailBody = "Hello " . ($student['full_name'] ?? 'Student') . ",\n\nYour submission for '" . ($selectedActivity['title'] ?? '') . "' has been received successfully. You can view your submission here: " . url('student/my_submissions.php') . "\n\nRegards,\n" . MAIL_FROM_NAME;
           @send_system_mail($student['email'], $mailSubject, $mailBody);
         }
         snapshot_submission_history($submissionId, 'created', 'student', (int) $student['id'], (string) $student['full_name']);
@@ -273,11 +276,11 @@ $subtitle = 'Choose an activity, review restrictions, and submit from one clear 
 require_once __DIR__ . '/../backend/partials/header.php';
 ?>
 <section class="workspace-shell student-history-shell ui-section" data-student-submit-shell>
-  <div class="workspace-head ui-section__head">
+  <div class="workspace-head">
     <div>
-      <div class="eyebrow ui-section__eyebrow">Student portal</div>
-      <h2 class="ui-section__title">Submission workspace</h2>
-      <p class="muted ui-section__desc">Review available activities, filter by state or mode, then submit inline without leaving this page.</p>
+      <div class="eyebrow">Student portal</div>
+      <h2>Submission workspace</h2>
+      <p class="muted">Review available activities, filter by state or mode, then submit inline without leaving this page.</p>
     </div>
     <div class="student-history-actions ui-action-row">
       <a class="btn btn-secondary ui-btn ui-btn--secondary" href="<?= h(url('student/my_submissions.php')) ?>">Open history</a>
@@ -292,27 +295,25 @@ require_once __DIR__ . '/../backend/partials/header.php';
   </div>
 
   <?php if (!$allowed): ?>
-    <div class="ui-empty-state submit-empty-state">
-      <div class="ui-empty-state__icon">○</div>
-      <h3 class="ui-empty-state__title">Submissions are unavailable</h3>
-      <p class="ui-empty-state__text">This usually means your section or account is in view-only mode. Contact your teacher or administrator, then refresh this page.</p>
+    <div class="card empty-state submit-empty-state ui-empty-state">
+      <strong>Submissions are currently unavailable for your account.</strong>
+      <div class="muted small">This usually means your section or account is in view-only mode. Contact your teacher or administrator, then refresh this page.</div>
       <div class="form-actions ui-action-row">
         <a class="btn btn-outline ui-btn ui-btn--ghost" href="<?= h(url('student/subjects.php')) ?>">Go to Subjects</a>
         <a class="btn ui-btn ui-btn--primary" href="<?= h(url('student/submit.php')) ?>">Refresh</a>
       </div>
     </div>
   <?php elseif (!$activities): ?>
-    <div class="ui-empty-state submit-empty-state">
-      <div class="ui-empty-state__icon">○</div>
-      <h3 class="ui-empty-state__title">No activities available</h3>
-      <p class="ui-empty-state__text">Your teacher may not have published activities for your section, or the current activities are still closed/upcoming.</p>
+    <div class="card empty-state submit-empty-state ui-empty-state">
+      <strong>No submission activities are visible yet.</strong>
+      <div class="muted small">Your teacher may not have published activities for your section, or the current activities are still closed/upcoming.</div>
       <div class="form-actions ui-action-row">
         <a class="btn btn-outline ui-btn ui-btn--ghost" href="<?= h(url('student/subjects.php')) ?>">Go to Subjects</a>
         <a class="btn ui-btn ui-btn--primary" href="<?= h(url('student/submit.php' . ($subjectIdFilter > 0 ? '?subject_id=' . $subjectIdFilter : ''))) ?>">Refresh</a>
       </div>
     </div>
   <?php else: ?>
-    <article class="card submit-list-shell ui-table-card">
+    <article class="card submit-list-shell ui-panel-card">
       <div class="split-header">
         <div>
           <h3 class="section-title">Available activities</h3>
@@ -322,11 +323,11 @@ require_once __DIR__ . '/../backend/partials/header.php';
       </div>
 
       <div class="submit-filter-row ui-filter-group" data-submit-filters>
-        <button type="button" class="ui-filter is-active" data-submit-filter="all">All</button>
-        <button type="button" class="ui-filter" data-submit-filter="open">Open</button>
-        <button type="button" class="ui-filter" data-submit-filter="closing-soon">Closing soon</button>
-        <button type="button" class="ui-filter" data-submit-filter="team">Team</button>
-        <button type="button" class="ui-filter" data-submit-filter="individual">Individual</button>
+        <button type="button" class="btn btn-outline ui-filter is-active" data-submit-filter="all">All</button>
+        <button type="button" class="btn btn-outline ui-filter" data-submit-filter="open">Open</button>
+        <button type="button" class="btn btn-outline ui-filter" data-submit-filter="closing-soon">Closing soon</button>
+        <button type="button" class="btn btn-outline ui-filter" data-submit-filter="team">Team</button>
+        <button type="button" class="btn btn-outline ui-filter" data-submit-filter="individual">Individual</button>
       </div>
 
       <div class="review-card-grid" data-submit-activity-grid>
@@ -359,21 +360,22 @@ require_once __DIR__ . '/../backend/partials/header.php';
             $isSelected = $selectedActivityId === $activityId;
         ?>
         <article class="card review-queue-card submit-activity-card ui-activity-card<?= $isSelected ? ' is-selected' : '' ?>" data-submit-card data-filter-tags="<?= h(implode(' ', array_unique($cardFilters))) ?>">
-          <div class="ui-activity-card__top">
+          <div class="split-header">
             <div>
-              <h3 class="section-title ui-activity-card__title"><?= h($activity['activity_title'] ?? $activity['title'] ?? 'Untitled activity') ?></h3>
-              <div class="muted small ui-activity-card__meta"><?= h($activity['subject_code']) ?> · <?= h($activity['subject_name']) ?></div>
+              <h3 class="section-title"><?= h($activity['activity_title'] ?? $activity['title'] ?? 'Untitled activity') ?></h3>
+              <div class="muted small"><?= h($activity['subject_code']) ?> · <?= h($activity['subject_name']) ?></div>
             </div>
-            <span class="ui-badge <?= $windowState === 'open' ? 'ui-badge--open' : ($windowState === 'late' ? 'ui-badge--warning' : 'ui-badge--muted') ?>"><?= h($window['label'] ?? 'Open') ?></span>
+            <?= status_badge($windowState) ?>
           </div>
-          <p class="ui-activity-card__desc"><?= h($activity['teacher_name']) ?></p>
+          <div class="muted small"><?= h($activity['teacher_name']) ?></div>
           <div class="submit-chip-row ui-chip-row">
-            <span class="ui-chip"><?= h(ucfirst((string) $activity['submission_mode'])) ?></span>
+            <span class="pill soft ui-chip"><?= h($window['label'] ?? 'Open') ?></span>
+            <span class="pill soft ui-chip"><?= h(ucfirst((string) $activity['submission_mode'])) ?></span>
             <?php foreach ($restrictionItems as $restriction): ?>
-              <span class="ui-chip"><?= h($restriction) ?></span>
+              <span class="pill ui-chip"><?= h($restriction) ?></span>
             <?php endforeach; ?>
             <?php if (!$restrictionItems): ?>
-              <span class="ui-chip">Flexible requirements</span>
+              <span class="pill ui-chip">Flexible requirements</span>
             <?php endif; ?>
           </div>
           <?php if ($hasSubmitted): ?>
@@ -385,17 +387,15 @@ require_once __DIR__ . '/../backend/partials/header.php';
             </div>
           <?php endif; ?>
           <div class="form-actions ui-action-row" style="margin-top:12px;">
-            <a class="btn <?= $canSubmitNow ? '' : 'btn-secondary' ?> ui-btn <?= $canSubmitNow ? 'ui-btn--primary' : 'ui-btn--secondary' ?>" href="<?= h(url('student/submit.php?activity_id=' . $activityId . ($subjectIdFilter > 0 ? '&subject_id=' . $subjectIdFilter : ''))) ?>">
+            <a class="btn ui-btn <?= $canSubmitNow ? 'ui-btn--primary' : 'ui-btn--secondary' ?> <?= $canSubmitNow ? '' : 'btn-secondary' ?>" href="<?= h(url('student/submit.php?activity_id=' . $activityId . ($subjectIdFilter > 0 ? '&subject_id=' . $subjectIdFilter : ''))) ?>">
               <?= $canSubmitNow ? ($hasSubmitted ? 'View / Resubmit' : 'Submit') : 'View details' ?>
             </a>
           </div>
         </article>
         <?php endforeach; ?>
       </div>
-      <div class="ui-empty-state submission-empty-state is-hidden" data-submit-filter-empty>
-        <div class="ui-empty-state__icon">○</div>
-        <h3 class="ui-empty-state__title">No activities available</h3>
-        <p class="ui-empty-state__text">No activities match the current filter.</p>
+      <div class="card empty-state submission-empty-state ui-empty-state is-hidden" data-submit-filter-empty>
+        No activities match the current filter.
       </div>
     </article>
 
@@ -417,20 +417,18 @@ require_once __DIR__ . '/../backend/partials/header.php';
           </div>
           <?= status_badge((string) (($selectedActivity['activity_window']['state'] ?? 'open'))) ?>
         </div>
-        <div class="ui-info-strip" style="margin-bottom:14px;">
-          <div class="ui-info-item"><span class="ui-info-item__label">Window</span><strong class="ui-info-item__value"><?= h($selectedActivity['activity_window']['label'] ?? 'Open') ?></strong></div>
-          <div class="ui-info-item"><span class="ui-info-item__label">Teacher</span><strong class="ui-info-item__value"><?= h($selectedActivity['teacher_name']) ?></strong></div>
-          <div class="ui-info-item"><span class="ui-info-item__label">Mode</span><strong class="ui-info-item__value"><?= h(ucfirst((string) $selectedActivity['submission_mode'])) ?></strong></div>
-          <div class="ui-info-item"><span class="ui-info-item__label">Members</span><strong class="ui-info-item__value"><?= (int) $selectedActivity['min_members'] ?>-<?= (int) $selectedActivity['max_members'] ?></strong></div>
+        <div class="callout" style="margin-bottom:14px;">
+          <strong><?= h($selectedActivity['activity_window']['label'] ?? 'Open') ?></strong>
+          <div class="muted small">Teacher: <?= h($selectedActivity['teacher_name']) ?> · Mode: <?= h(ucfirst((string) $selectedActivity['submission_mode'])) ?> · Members <?= (int) $selectedActivity['min_members'] ?>-<?= (int) $selectedActivity['max_members'] ?></div>
         </div>
         <section class="card submit-requirements ui-panel-card">
-          <h4 class="section-title ui-form-section__title">Requirements</h4>
+          <h4 class="section-title">Requirements</h4>
           <div class="submit-chip-row ui-chip-row">
-            <span class="ui-chip">Repository <?= !empty($selectedActivity['require_repository']) ? 'required' : 'optional' ?></span>
-            <span class="ui-chip">Live URL <?= !empty($selectedActivity['require_live_url']) ? 'required' : 'optional' ?></span>
-            <span class="ui-chip">Attachment <?= !empty($selectedActivity['require_file']) ? 'required' : 'optional' ?></span>
-            <span class="ui-chip">Late <?= !empty($selectedActivity['allow_late']) ? 'allowed' : 'blocked' ?></span>
-            <span class="ui-chip">Resubmission <?= !empty($selectedActivity['allow_resubmission']) ? 'allowed' : 'blocked' ?></span>
+            <span class="pill ui-chip <?= !empty($selectedActivity['require_repository']) ? '' : 'soft' ?>">Repository <?= !empty($selectedActivity['require_repository']) ? 'required' : 'optional' ?></span>
+            <span class="pill ui-chip <?= !empty($selectedActivity['require_live_url']) ? '' : 'soft' ?>">Live URL <?= !empty($selectedActivity['require_live_url']) ? 'required' : 'optional' ?></span>
+            <span class="pill ui-chip <?= !empty($selectedActivity['require_file']) ? '' : 'soft' ?>">Attachment <?= !empty($selectedActivity['require_file']) ? 'required' : 'optional' ?></span>
+            <span class="pill ui-chip <?= !empty($selectedActivity['allow_late']) ? '' : 'soft' ?>">Late <?= !empty($selectedActivity['allow_late']) ? 'allowed' : 'blocked' ?></span>
+            <span class="pill ui-chip <?= !empty($selectedActivity['allow_resubmission']) ? '' : 'soft' ?>">Resubmission <?= !empty($selectedActivity['allow_resubmission']) ? 'allowed' : 'blocked' ?></span>
           </div>
         </section>
 
@@ -459,23 +457,22 @@ require_once __DIR__ . '/../backend/partials/header.php';
         ?>
 
         <?php if ($teamMode): ?>
-            <section class="card ui-panel-card" style="margin-bottom:14px;">
+          <section class="card ui-panel-card" style="margin-bottom:14px;">
             <div class="split-header">
               <div>
                 <h4 class="section-title">Team review</h4>
                 <div class="muted small">Your saved subject team will be used for this submission.</div>
               </div>
               <?php if ($selectedSubjectTeam): ?>
-                <span class="pill"><?= h(ucfirst((string) ($selectedSubjectTeam['role'] ?? 'member'))) ?></span>
+                <span class="pill ui-chip"><?= h(ucfirst((string) ($selectedSubjectTeam['role'] ?? 'member'))) ?></span>
               <?php endif; ?>
             </div>
             <?php if (!$selectedSubjectTeam): ?>
-                <div class="ui-empty-state">
-                  <div class="ui-empty-state__icon">○</div>
-                  <h4 class="ui-empty-state__title">Team required first</h4>
-                  <p class="ui-empty-state__text">Create your subject team in the subject workspace, then return here to submit.</p>
-                  <div class="form-actions"><a class="btn btn-outline ui-btn ui-btn--ghost" href="<?= h(url('student/subjects.php')) ?>">Manage team in Subjects</a></div>
-                </div>
+              <div class="empty-state ui-empty-state">
+                <strong>Team required first</strong>
+                <div class="muted small">Create your subject team in the subject workspace, then return here to submit.</div>
+                <div class="form-actions ui-action-row"><a class="btn btn-outline ui-btn ui-btn--ghost" href="<?= h(url('student/subjects.php')) ?>">Manage team in Subjects</a></div>
+              </div>
             <?php else: ?>
               <div class="info-list" style="margin-top:8px;">
                 <div class="row"><span>Leader</span><strong><?= h($selectedSubjectTeam['leader_name'] ?? '—') ?></strong></div>
@@ -492,65 +489,63 @@ require_once __DIR__ . '/../backend/partials/header.php';
               <?php if (!$teamReady): ?>
                 <div class="callout" style="margin-top:12px;"><strong>Submission unavailable</strong><div class="muted small"><?= h($teamReadOnlyNotice) ?></div></div>
               <?php endif; ?>
-                <div class="form-actions" style="margin-top:12px;"><a class="btn btn-outline ui-btn ui-btn--ghost" href="<?= h(url('student/subjects.php')) ?>">Manage Team</a></div>
+              <div class="form-actions ui-action-row" style="margin-top:12px;"><a class="btn btn-outline ui-btn ui-btn--ghost" href="<?= h(url('student/subjects.php')) ?>">Manage Team</a></div>
             <?php endif; ?>
           </section>
         <?php endif; ?>
 
         <?php if ($selectedSubmitted && !$selectedCanResubmit): ?>
-          <div class="ui-empty-state">
-            <div class="ui-empty-state__icon">○</div>
-            <h4 class="ui-empty-state__title">Already submitted</h4>
-            <p class="ui-empty-state__text">You already submitted this activity and resubmission is not allowed.</p>
+          <div class="empty-state ui-empty-state">
+            <strong>Already submitted</strong>
+            <div class="muted small">You already submitted this activity and resubmission is not allowed.</div>
           </div>
         <?php elseif (!$canSubmitSelected): ?>
-          <div class="ui-empty-state">
-            <div class="ui-empty-state__icon">○</div>
-            <h4 class="ui-empty-state__title">Submission is unavailable</h4>
-            <p class="ui-empty-state__text"><?= h($teamReadOnlyNotice ?: 'This activity is locked or currently outside the open window.') ?></p>
+          <div class="empty-state ui-empty-state">
+            <strong>Submission is currently unavailable.</strong>
+            <div class="muted small"><?= h($teamReadOnlyNotice ?: 'This activity is locked or currently outside the open window.') ?></div>
           </div>
         <?php else: ?>
-        <form method="post" enctype="multipart/form-data" class="form-grid submit-form-shell ui-form-shell" id="activity-submit-form">
+        <form method="post" enctype="multipart/form-data" class="form-grid submit-form-shell ui-form-shell ui-form-grid" id="activity-submit-form">
           <input type="hidden" name="_csrf" value="<?= h(csrf_token()) ?>">
           <input type="hidden" name="activity_id" id="activity-id-fixed" value="<?= $selectedId ?>">
 
-          <div class="full submit-form-section ui-form-section">
-            <h4 class="section-title ui-form-section__title">Required submission details</h4>
-            <div class="form-grid submit-two-col ui-form-grid">
+          <div class="full submit-form-section">
+            <h4 class="section-title">Required submission details</h4>
+            <div class="form-grid submit-two-col">
               <?php if (!empty($selectedActivity['require_repository'])): ?>
-              <div><label class="ui-field__label">Project / repository URL</label><input class="ui-input" name="project_url" placeholder="https://github.com/your-team/project" required></div>
+              <div><label>Project / repository URL</label><input class="ui-input" name="project_url" placeholder="https://github.com/your-team/project" required></div>
               <?php endif; ?>
               <?php if (!empty($selectedActivity['require_live_url'])): ?>
-              <div><label class="ui-field__label">Live / demo URL</label><input class="ui-input" name="video_url" placeholder="https://your-demo.example.com" required></div>
+              <div><label>Live / demo URL</label><input class="ui-input" name="video_url" placeholder="https://your-demo.example.com" required></div>
               <?php endif; ?>
-              <div><label class="ui-field__label">Contact email</label><input class="ui-input" name="contact_email" type="email" required placeholder="leader@example.com"></div>
+              <div><label>Contact email</label><input class="ui-input" name="contact_email" type="email" required placeholder="leader@example.com"></div>
               <?php if (!empty($selectedActivity['require_file'])): ?>
-              <div><label class="ui-field__label">Attachment</label><input class="ui-input" type="file" name="attachment" accept=".pdf,.jpg,.jpeg,.png,.webp" required></div>
+              <div><label>Attachment</label><input class="ui-input" type="file" name="attachment" accept=".pdf,.jpg,.jpeg,.png,.webp" required></div>
               <?php endif; ?>
             </div>
           </div>
 
-          <div class="full submit-form-section ui-form-section">
-            <h4 class="section-title ui-form-section__title">Optional project information</h4>
-            <div class="form-grid submit-two-col ui-form-grid">
+          <div class="full submit-form-section">
+            <h4 class="section-title">Optional project information</h4>
+            <div class="form-grid submit-two-col">
               <?php if (empty($selectedActivity['require_repository'])): ?>
-              <div><label class="ui-field__label">Project / repository URL</label><input class="ui-input" name="project_url" placeholder="https://github.com/your-team/project"></div>
+              <div><label>Project / repository URL</label><input class="ui-input" name="project_url" placeholder="https://github.com/your-team/project"></div>
               <?php endif; ?>
               <?php if (empty($selectedActivity['require_live_url'])): ?>
-              <div><label class="ui-field__label">Live / demo URL</label><input class="ui-input" name="video_url" placeholder="https://your-demo.example.com"></div>
+              <div><label>Live / demo URL</label><input class="ui-input" name="video_url" placeholder="https://your-demo.example.com"></div>
               <?php endif; ?>
               <?php if (empty($selectedActivity['require_file'])): ?>
-              <div><label class="ui-field__label">Attachment</label><input class="ui-input" type="file" name="attachment" accept=".pdf,.jpg,.jpeg,.png,.webp"></div>
+              <div><label>Attachment</label><input class="ui-input" type="file" name="attachment" accept=".pdf,.jpg,.jpeg,.png,.webp"></div>
               <?php endif; ?>
-              <div><label class="ui-field__label">Submission title</label><input class="ui-input" name="assigned_system" placeholder="Final web application build" value="<?= h($selectedActivity['title']) ?>"></div>
-              <div><label class="ui-field__label">Client / company name</label><input class="ui-input" name="company_name" placeholder="Optional client or company"></div>
+              <div><label>Submission title</label><input class="ui-input" name="assigned_system" placeholder="Final web application build" value="<?= h($selectedActivity['title']) ?>"></div>
+              <div><label>Client / company name</label><input class="ui-input" name="company_name" placeholder="Optional client or company"></div>
             </div>
-            <div class="full"><label class="ui-field__label">Notes</label><textarea class="ui-textarea" name="notes" id="notes-input" rows="4" placeholder="Optional summary, setup notes, or special instructions" <?= !empty($selectedActivity['require_notes']) ? 'required' : '' ?>></textarea></div>
+            <div class="full"><label>Notes</label><textarea class="ui-textarea" name="notes" id="notes-input" rows="4" placeholder="Optional summary, setup notes, or special instructions" <?= !empty($selectedActivity['require_notes']) ? 'required' : '' ?>></textarea></div>
           </div>
 
           <div class="full form-grid<?= !empty($selectedActivity['require_demo_access']) ? '' : ' is-hidden' ?>" id="demo-block" style="grid-template-columns:1fr 1fr;">
-            <div><label class="ui-field__label">Demo username</label><input class="ui-input" name="demo_username" placeholder="admin-demo"></div>
-            <div id="demo-password-block"><label class="ui-field__label">Demo password</label><input class="ui-input" name="demo_password" placeholder="temporary password"></div>
+            <div><label>Demo username</label><input class="ui-input" name="demo_username" placeholder="admin-demo"></div>
+            <div id="demo-password-block"><label>Demo password</label><input class="ui-input" name="demo_password" placeholder="temporary password"></div>
           </div>
 
           <div class="full form-actions ui-action-row">
@@ -561,14 +556,14 @@ require_once __DIR__ . '/../backend/partials/header.php';
         <?php endif; ?>
 
         <?php if ($selectedResources): ?>
-          <div class="card ui-panel-card" style="margin-top:16px;">
-            <h4 class="section-title ui-form-section__title">Activity resources</h4>
+          <div class="card ui-table-card" style="margin-top:16px;">
+            <h4 class="section-title">Activity resources</h4>
             <div class="timeline-list">
               <?php foreach ($selectedResources as $resource): ?>
                 <div class="timeline-item">
                   <strong><?= h($resource['title']) ?></strong>
                   <div class="muted small"><?= h(basename((string) $resource['file_path'])) ?></div>
-                  <div class="form-actions"><a class="btn btn-outline ui-btn ui-btn--ghost" href="<?= h(url($resource['file_path'])) ?>" target="_blank" rel="noopener">Open file</a></div>
+                  <div class="form-actions ui-action-row"><a class="btn btn-outline ui-btn ui-btn--ghost" href="<?= h(url($resource['file_path'])) ?>" target="_blank" rel="noopener">Open file</a></div>
                 </div>
               <?php endforeach; ?>
             </div>
@@ -605,10 +600,7 @@ require_once __DIR__ . '/../backend/partials/header.php';
       });
       emptyFiltered?.classList.toggle('is-hidden', visible > 0);
       if (emptyFiltered) {
-        const textNode = emptyFiltered.querySelector('.ui-empty-state__text');
-        if (textNode) {
-          textNode.textContent = emptyMessages[filter] || emptyMessages.all;
-        }
+        emptyFiltered.textContent = emptyMessages[filter] || emptyMessages.all;
       }
       filterButtons.forEach((button) => button.classList.toggle('is-active', button.getAttribute('data-submit-filter') === filter));
     };

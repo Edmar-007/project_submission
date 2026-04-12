@@ -49,7 +49,7 @@ require_once __DIR__ . '/../backend/partials/header.php';
     <div class="bar-chart"><?php foreach ($sectionDistribution as $row): $width = $maxSection ? round(((int)$row['total_students'] / $maxSection) * 100) : 0; ?><div class="bar-item"><div class="bar-top"><strong><?= h($row['section_name']) ?></strong><span><?= (int)$row['total_students'] ?></span></div><div class="bar-line"><span style="width: <?= $width ?>%"></span></div></div><?php endforeach; ?></div>
   </div>
   <div class="card chart-card">
-    <div class="split-header"><div><h3 class="section-title">Submissions by subject</h3><div class="muted small">Where activity is highest right now</div></div><a class="btn btn-outline" href="<?= h(url('admin/export_report.php?type=submissions&format=xlsx')) ?>">Export Excel</a></div>
+    <div class="split-header"><div><h3 class="section-title">Submissions by subject</h3><div class="muted small">Where activity is highest right now</div></div><a class="btn btn-outline" href="<?= h(url('admin/print_report.php')) ?>" target="_blank">Print report</a></div>
     <div class="bar-chart"><?php foreach ($subjectDistribution as $row): $width = $maxSubject ? round(((int)$row['total_submissions'] / $maxSubject) * 100) : 0; ?><div class="bar-item"><div class="bar-top"><strong><?= h($row['subject_name']) ?></strong><span><?= (int)$row['total_submissions'] ?></span></div><div class="bar-line"><span style="width: <?= $width ?>%"></span></div></div><?php endforeach; ?></div>
   </div>
 </div>

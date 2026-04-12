@@ -113,23 +113,15 @@ foreach ($subjects as $subject) {
 $title = 'My Subjects';
 $subtitle = 'Browse subject containers and the submission activities published inside them';
 require_once __DIR__ . '/../backend/partials/header.php';
-$badgeClassFor = static function (string $status): string {
-    $key = strtolower(trim($status));
-    if (in_array($key, ['active', 'open', 'ready'], true)) return 'ui-badge--open';
-    if (in_array($key, ['pending', 'reviewed', 'warning'], true)) return 'ui-badge--warning';
-    if (in_array($key, ['graded', 'success', 'approved'], true)) return 'ui-badge--success';
-    if (in_array($key, ['blocked', 'archived', 'inactive', 'error', 'denied'], true)) return 'ui-badge--danger';
-    return 'ui-badge--muted';
-};
 ?>
 <section class="workspace-shell student-history-shell ui-section">
-  <div class="workspace-head ui-section__head">
+  <div class="workspace-head">
     <div>
-      <div class="eyebrow ui-section__eyebrow">Student subjects</div>
-      <h2 class="ui-section__title">Assigned subject workspace</h2>
-      <p class="muted ui-section__desc">Subjects are now containers. Your teacher can publish multiple submission activities inside each subject with different sections, deadlines, and restrictions.</p>
+      <div class="eyebrow">Student subjects</div>
+      <h2>Assigned subject workspace</h2>
+      <p class="muted">Subjects are now containers. Your teacher can publish multiple submission activities inside each subject with different sections, deadlines, and restrictions.</p>
     </div>
-    <div class="student-history-actions"><a class="btn ui-btn ui-btn--primary" href="<?= h(url('student/submit.php')) ?>">Open submit flow</a></div>
+    <div class="student-history-actions ui-action-row"><a class="btn ui-btn ui-btn--primary" href="<?= h(url('student/submit.php')) ?>">Open submit flow</a></div>
   </div>
 
   <div class="review-card-grid">
@@ -138,18 +130,9 @@ $badgeClassFor = static function (string $status): string {
       <?php $subjectTeam = $teamMap[(int) $subject['id']] ?? null; ?>
       <?php $subjectTeamMembers = $teamMembersMap[(int) $subject['id']] ?? []; ?>
       <article class="card review-queue-card ui-subject-card">
-        <div class="ui-subject-card__top">
-          <div>
-            <h3 class="section-title ui-subject-card__title"><?= h($subject['subject_name']) ?></h3>
-            <p class="ui-subject-card__meta"><?= h($subject['subject_code']) ?> · <?= h($subject['teacher_name']) ?></p>
-          </div>
-          <span class="ui-badge <?= h($badgeClassFor((string) ($subject['status'] ?? ''))) ?>"><?= h(ucfirst((string) $subject['status'])) ?></span>
-        </div>
-        <p class="muted ui-subject-card__desc"><?= h($subject['description'] ?: 'Assigned through your section.') ?></p>
-        <div class="ui-chip-row" style="margin-bottom:12px;">
-          <span class="ui-chip"><?= count($subjectActivities) ?> activities</span>
-          <span class="ui-chip"><?= h(($subjectActivities[0]['submission_mode'] ?? 'team') === 'individual' ? 'Individual flow' : 'Team-ready subject') ?></span>
-        </div>
+        <div class="split-header ui-subject-card__top"><div><h3 class="section-title ui-subject-card__title"><?= h($subject['subject_name']) ?></h3><div class="muted small"><?= h($subject['subject_code']) ?> · <?= h($subject['teacher_name']) ?></div></div><?= status_badge($subject['status']) ?></div>
+        <p class="muted"><?= h($subject['description'] ?: 'Assigned through your section.') ?></p>
+        <div class="metric-chip ui-chip" style="margin-bottom:12px;"><span>Activities</span><strong><?= count($subjectActivities) ?></strong></div>
         <div class="timeline-list">
           <?php foreach (array_slice($subjectActivities, 0, 4) as $activity): ?>
             <div class="timeline-item">
@@ -158,7 +141,7 @@ $badgeClassFor = static function (string $status): string {
               <div class="muted small"><?= h(ucfirst((string) $activity['submission_mode'])) ?> submission</div>
             </div>
           <?php endforeach; ?>
-          <?php if (!$subjectActivities): ?><div class="ui-empty-state"><div class="ui-empty-state__icon">○</div><h4 class="ui-empty-state__title">No activities available</h4><p class="ui-empty-state__text">Your teacher has not published activities for this subject yet.</p></div><?php endif; ?>
+          <?php if (!$subjectActivities): ?><div class="empty-state ui-empty-state">No activity is published for this subject yet.</div><?php endif; ?>
         </div>
         <section class="card ui-panel-card" style="margin-top:12px;">
           <div class="split-header">
@@ -167,7 +150,7 @@ $badgeClassFor = static function (string $status): string {
               <div class="muted small">This team is reused automatically for team-based submissions.</div>
             </div>
             <?php if ($subjectTeam): ?>
-              <span class="pill <?= ($subjectTeam['role'] ?? '') === 'leader' ? 'soft' : '' ?>"><?= h(ucfirst((string) ($subjectTeam['role'] ?? 'member'))) ?></span>
+              <span class="pill ui-chip <?= ($subjectTeam['role'] ?? '') === 'leader' ? 'soft' : '' ?>"><?= h(ucfirst((string) ($subjectTeam['role'] ?? 'member'))) ?></span>
             <?php endif; ?>
           </div>
           <?php if ($subjectTeam): ?>
@@ -175,11 +158,11 @@ $badgeClassFor = static function (string $status): string {
               <div class="row"><span>Leader</span><strong><?= h($subjectTeam['leader_name'] ?? '—') ?></strong></div>
               <div class="row"><span>Members</span><strong><?= count($subjectTeamMembers) ?></strong></div>
             </div>
-            <div class="timeline-list ui-member-list" style="margin-top:10px;">
+            <div class="timeline-list" style="margin-top:10px;">
               <?php foreach ($subjectTeamMembers as $member): ?>
-                <div class="timeline-item ui-member-card">
+                <div class="timeline-item">
                   <strong><?= h($member['full_name']) ?></strong>
-                  <span><?= h($member['student_id']) ?> · <?= h(ucfirst((string) $member['role'])) ?></span>
+                  <p><?= h($member['student_id']) ?> · <?= h(ucfirst((string) $member['role'])) ?></p>
                 </div>
               <?php endforeach; ?>
             </div>
@@ -190,7 +173,7 @@ $badgeClassFor = static function (string $status): string {
               </div>
             <?php endif; ?>
           <?php else: ?>
-            <div class="ui-empty-state" style="margin-top:8px;"><div class="ui-empty-state__icon">○</div><h4 class="ui-empty-state__title">No subject team yet</h4><p class="ui-empty-state__text">Create one now so team activities can be submitted without rebuilding members later.</p></div>
+            <div class="empty-state ui-empty-state" style="margin-top:8px;">No subject team yet. Create one here so you can submit team-based activities without rebuilding members later.</div>
           <?php endif; ?>
 
           <?php if (!$subjectTeam || ($subjectTeam['role'] ?? '') === 'leader'): ?>
@@ -212,26 +195,26 @@ $badgeClassFor = static function (string $status): string {
               </div>
               <div class="form-grid" style="grid-template-columns:1fr auto;align-items:start;">
                 <div style="position:relative;">
-                  <input type="text" data-team-search placeholder="Search eligible classmates">
+                  <input class="ui-input" type="text" data-team-search placeholder="Search eligible classmates">
                   <div class="table-card" data-team-results hidden style="position:absolute;z-index:12;inset:auto 0 0 0;transform:translateY(100%);max-height:230px;overflow:auto;"></div>
                 </div>
-                 <button type="button" class="btn btn-secondary ui-btn ui-btn--secondary" data-team-clear>Clear</button>
+                <button type="button" class="btn btn-secondary ui-btn ui-btn--secondary" data-team-clear>Clear</button>
               </div>
               <div class="timeline-list" data-team-chip-list style="margin-top:10px;"></div>
-              <div class="form-actions" style="margin-top:12px;">
-                 <button type="submit" class="btn ui-btn ui-btn--primary"><?= $subjectTeam ? 'Save team members' : 'Create subject team' ?></button>
-               </div>
+              <div class="form-actions ui-action-row" style="margin-top:12px;">
+                <button type="submit" class="btn ui-btn ui-btn--primary"><?= $subjectTeam ? 'Save team members' : 'Create subject team' ?></button>
+              </div>
               <template data-initial-members><?= h(json_encode(array_map(static fn($m): array => ['id' => (int) $m['id'], 'full_name' => (string) $m['full_name'], 'student_id' => (string) $m['student_id'], 'section_name' => (string) ($m['section_name'] ?? ''), 'email' => (string) ($m['email'] ?? '')], $prefillMembers), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) ?></template>
             </form>
           <?php endif; ?>
         </section>
         <div class="form-actions ui-action-row" style="margin-top:12px;">
-          <a class="btn btn-secondary ui-btn ui-btn--ghost" href="<?= h(url('student/subject_preview.php?subject_id=' . (int) $subject['id'])) ?>" data-ajax-modal="1" data-modal-title="Subject overview">Quick view</a>
-          <?php if ($subjectActivities): ?><a class="btn ui-btn ui-btn--primary" href="<?= h(url('student/submit.php?subject_id=' . (int) $subject['id'])) ?>">Open subject</a><?php endif; ?>
+          <a class="btn btn-secondary ui-btn ui-btn--secondary" href="<?= h(url('student/subject_preview.php?subject_id=' . (int) $subject['id'])) ?>" data-ajax-modal="1" data-modal-title="Subject overview">Overview</a>
+          <?php if ($subjectActivities): ?><a class="btn ui-btn ui-btn--primary" href="<?= h(url('student/submit.php?subject_id=' . (int) $subject['id'])) ?>">Choose activity</a><?php endif; ?>
         </div>
       </article>
     <?php endforeach; ?>
-    <?php if (!$subjects): ?><div class="ui-empty-state"><div class="ui-empty-state__icon">○</div><h3 class="ui-empty-state__title">No subjects available</h3><p class="ui-empty-state__text">No active subjects are assigned to your section right now.</p></div><?php endif; ?>
+    <?php if (!$subjects): ?><div class="card empty-state ui-empty-state">No active subjects are assigned to your section yet.</div><?php endif; ?>
   </div>
 </section>
 <script>
@@ -264,7 +247,7 @@ $badgeClassFor = static function (string $status): string {
     const renderSelected = () => {
       chipList.innerHTML = '';
       if (!selected.size) {
-        chipList.innerHTML = '<div class="ui-empty-state"><div class="ui-empty-state__icon">○</div><h4 class="ui-empty-state__title">No members selected</h4><p class="ui-empty-state__text">The leader remains part of the team.</p></div>';
+        chipList.innerHTML = '<div class="empty-state ui-empty-state">No additional members selected. The leader remains part of the team.</div>';
         syncHiddenInputs();
         return;
       }
@@ -284,7 +267,7 @@ $badgeClassFor = static function (string $status): string {
     const renderResults = (items) => {
       resultsBox.innerHTML = '';
       if (!items.length) {
-        resultsBox.innerHTML = '<div class="ui-empty-state" style="padding:12px;"><div class="ui-empty-state__icon">○</div><h4 class="ui-empty-state__title">No matches</h4><p class="ui-empty-state__text">No matching students found.</p></div>';
+         resultsBox.innerHTML = '<div class="empty-state ui-empty-state" style="padding:12px;">No matching students found.</div>';
         resultsBox.hidden = false;
         return;
       }

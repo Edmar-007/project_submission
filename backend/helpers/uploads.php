@@ -2,6 +2,10 @@
 if (defined('BACKEND_HELPERS_UPLOADS_PHP_LOADED')) { return; }
 define('BACKEND_HELPERS_UPLOADS_PHP_LOADED', true);
 
+if (!defined('APP_ROOT')) {
+    define('APP_ROOT', dirname(__DIR__, 2));
+}
+
 if (!function_exists('ensure_upload_dir')) {
 function ensure_upload_dir(string $relativeDir): string {
     $path = APP_ROOT . '/' . trim($relativeDir, '/');

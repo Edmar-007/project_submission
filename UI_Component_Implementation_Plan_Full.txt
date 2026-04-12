@@ -1,0 +1,383 @@
+ACT AS A REAL FULL STACK DEVELOPER EXPERT
+
+PROJECT SUBMISSION MANAGEMENT SYSTEM
+FULL UI COMPONENT SYSTEM IMPLEMENTATION PLAN
+============================================
+
+Goal:
+Create a clean, consistent, compact, and professional reusable UI component system
+for the entire academic project submission platform (student, teacher, and admin).
+
+Work ONLY on the active root application.
+Do NOT touch any nested duplicate folders.
+
+=== DESIGN & UX GUIDELINES (Apply to every page) ===
+-----------------------------------------------------
+1. Overall Look & Feel
+   - Modern, clean, professional academic style
+   - Compact cards and sections (no oversized elements)
+   - Soft shadows, rounded corners (18-24px)
+   - Primary accent color: #3b82f6 (blue)
+   - Good spacing and readability
+
+2. Modal Design & Functionality
+   - Fixed overlay with semi-transparent dark backdrop
+   - Centered dialog, max-width 1100px, scrollable if tall
+   - Header: title on left, close button on right
+   - Body: 26px padding
+   - Footer: action buttons right-aligned
+   - Must support:
+     • Click outside (backdrop) to close
+     • ESC key to close
+     • Close button must work
+     • Trigger with data-open-modal="modal-id"
+     • Close with data-close-modal
+
+3. Button Design & Placement
+   - Use .ui-btn with variants
+   - Primary actions (Submit, Open, Save) → .ui-btn--primary (right side)
+   - Secondary → .ui-btn--secondary or .ui-btn--ghost (left side)
+   - Danger (Delete, Archive) → .ui-btn--danger
+   - Group buttons with .ui-action-row (flex + gap 10px)
+   - Min-height 44px, proper hover states
+   - Fix non-working buttons by using correct type, data attributes, and JS
+
+4. Card & Form Sizing
+   - Cards: padding 20px, border-radius 22px
+   - Forms: centered with max-width 980px (.ui-form-shell)
+   - Avoid tall stacked layouts — prefer compact chips and meta rows
+
+5. Responsiveness
+   - Stack grids on mobile
+   - Tables scroll horizontally on small screens
+
+=== PHASE 1 — CREATE REUSABLE UI COMPONENT LAYER ===
+-----------------------------------------------------
+Files to create/update:
+
+1. backend/assets/ui-components.css     ← New dedicated UI kit
+2. backend/assets/app.css               ← Import the UI kit
+
+=== PHASE 2 — FULL UI KIT CSS ===
+---------------------------------
+Create backend/assets/ui-components.css with this exact content:
+
+```css
+/* UI COMPONENT KIT - Reusable across all roles */
+
+.ui-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 11px;
+  border-radius: 9999px;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.ui-badge--open    { background:#eef4ff; color:#1e40af; border-color:#bfdbfe; }
+.ui-badge--warning { background:#fffbeb; color:#854d0e; border-color:#fcd34d; }
+.ui-badge--success { background:#f0fdf4; color:#166534; border-color:#86efac; }
+.ui-badge--danger  { background:#fef2f2; color:#991b1b; border-color:#fca5a5; }
+.ui-badge--muted   { background:#f8fafc; color:#475569; border-color:#e2e8f0; }
+
+.ui-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ui-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 11px;
+  border-radius: 9999px;
+  background: #f8fafc;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.ui-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.ui-btn {
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  font-size: 14.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.ui-btn--primary   { background:#3b82f6; color:#fff; border-color:#3b82f6; }
+.ui-btn--primary:hover { background:#2563eb; }
+
+.ui-btn--secondary { background:#f0f9ff; color:#1e40af; border-color:#bae6fd; }
+.ui-btn--ghost     { background:#fff; color:#475569; border-color:#cbd5e1; }
+.ui-btn--danger    { background:#fef2f2; color:#b91c1c; border-color:#fecaca; }
+
+.ui-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 16px;
+}
+
+.ui-stat-card {
+  padding: 18px 20px;
+  border-radius: 20px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 30px rgba(15,23,42,0.05);
+}
+
+.ui-section {
+  padding: 24px;
+  border-radius: 24px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 30px rgba(15,23,42,0.06);
+}
+
+.ui-subject-card,
+.ui-activity-card,
+.ui-panel-card,
+.ui-table-card {
+  padding: 20px;
+  border-radius: 22px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 28px rgba(15,23,42,0.05);
+}
+
+.ui-subject-card__top,
+.ui-activity-card__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.ui-subject-card__title,
+.ui-activity-card__title {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.15;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.ui-filter-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ui-filter {
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #334155;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ui-filter.is-active {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1e40af;
+}
+
+.ui-empty-state {
+  padding: 32px 24px;
+  text-align: center;
+  border: 2px dashed #cbd5e1;
+  border-radius: 20px;
+  background: #f8fafc;
+}
+
+.ui-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  display: none;
+  place-items: center;
+  padding: 20px;
+  z-index: 9999;
+}
+
+.ui-modal__dialog {
+  width: min(1100px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  background: #fff;
+  border-radius: 28px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 25px 70px rgba(15,23,42,0.22);
+}
+
+.ui-modal__header,
+.ui-modal__footer {
+  padding: 22px 26px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.ui-modal__body {
+  padding: 0 26px 26px;
+}
+
+.ui-form-shell {
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.ui-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.ui-input,
+.ui-textarea,
+.ui-select {
+  width: 100%;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 14px;
+  padding: 13px 16px;
+  font-size: 15px;
+}
+
+.ui-input:focus,
+.ui-textarea:focus,
+.ui-select:focus {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 4px rgba(96,165,250,0.15);
+}
+
+/* Responsive */
+@media (max-width: 920px) {
+  .ui-modal__grid { grid-template-columns: 1fr; }
+}
+```
+Update backend/assets/app.css to include:
+CSS@import url('ui-components.css');
+=== PHASE 3 — MODAL & BUTTON JAVASCRIPT ===
+Add this JavaScript in backend/partials/footer.php (before </body>):
+document.addEventListener('DOMContentLoaded', function() {
+  // Open modals
+  document.querySelectorAll('[data-open-modal]').forEach(button => {
+    button.addEventListener('click', () => {
+      const id = button.getAttribute('data-open-modal');
+      const modal = document.querySelector(`[data-modal="${id}"]`);
+      if (modal) modal.style.display = 'grid';
+    });
+  });
+
+  // Close modals
+  document.querySelectorAll('[data-close-modal]').forEach(button => {
+    button.addEventListener('click', () => {
+      const modal = button.closest('.ui-modal');
+      if (modal) modal.style.display = 'none';
+    });
+  });
+
+  // Click backdrop to close
+  document.querySelectorAll('.ui-modal').forEach(modal => {
+    modal.addEventListener('click', e => {
+      if (e.target === modal) modal.style.display = 'none';
+    });
+  });
+
+  // ESC key to close
+  document.addEventListener('keydown', e => {
+    if (e.key === "Escape") {
+      document.querySelectorAll('.ui-modal').forEach(modal => {
+        modal.style.display = 'none';
+      });
+    }
+  });
+});
+=== PHASE 4 — PAGES TO REFACTOR ===
+Refactor these pages first using the new components:
+
+student/subjects.php
+student/submit.php
+student/my_submissions.php
+teacher/subjects.php
+
+=== PHASE 5 — EXAMPLE TEMPLATES ===
+Student Subject Card:
+<article class="ui-subject-card">
+  <div class="ui-subject-card__top">
+    <div>
+      <h3 class="ui-subject-card__title">Information Management</h3>
+      <p class="ui-subject-card__meta">IM101 · Teacher One</p>
+    </div>
+    <span class="ui-badge ui-badge--open">Active</span>
+  </div>
+  <p class="ui-subject-card__desc">Project submissions container.</p>
+  <div class="ui-chip-row">
+    <span class="ui-chip">3 activities</span>
+  </div>
+  <div class="ui-action-row" style="margin-top:16px;">
+    <a href="#" class="ui-btn ui-btn--primary">Open subject</a>
+    <button class="ui-btn ui-btn--ghost" data-open-modal="preview">Quick view</button>
+  </div>
+</article>
+Modal Example:
+<div class="ui-modal" data-modal="preview" style="display:none;">
+  <div class="ui-modal__dialog">
+    <div class="ui-modal__header">
+      <div>
+        <h2 class="ui-modal__title">Subject Overview</h2>
+      </div>
+      <button class="ui-btn ui-btn--ghost" data-close-modal>Close</button>
+    </div>
+    <div class="ui-modal__body">
+      <!-- content -->
+    </div>
+    <div class="ui-modal__footer">
+      <button class="ui-btn ui-btn--ghost" data-close-modal>Cancel</button>
+      <a href="#" class="ui-btn ui-btn--primary">Open workspace</a>
+    </div>
+  </div>
+</div>
+=== FINAL NOTES ===
+
+Keep all PHP logic, form submissions, and exports intact
+Ensure every button and modal works after changes
+Make cards feel compact and professional
+Test on desktop and mobile
+
+End of Full UI Component Implementation Plan.
+
+**Done!**
+
+Now:
+1. Create a new file named `UI_Component_Implementation_Plan_Full.txt`
+2. Paste the entire block above into it.
+3. Give this TXT file to any AI and instruct it to execute the plan.
+
+Would you like me to also create a separate TXT with **only the full CSS** or **only the JavaScript** for easier use? Just say yes.

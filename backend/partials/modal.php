@@ -17,6 +17,10 @@ function render_modal(string $modalKey, string $title, string $lead = '', string
         unset($attributes['class']);
     }
     $ariaLabelledby = $attributes['aria-labelledby'] ?? $id . '-title';
+    $attributeString = '';
+    foreach ($attributes as $key => $value) {
+        $attributeString .= ' ' . h((string) $key) . '="' . h((string) $value) . '"';
+    }
     ?>
     
     <div 
@@ -26,11 +30,7 @@ function render_modal(string $modalKey, string $title, string $lead = '', string
         aria-modal="true"
         role="dialog"
         aria-labelledby="<?= h($ariaLabelledby) ?>"
-        <?= array_reduce(
-            $attributes, 
-            fn($carry, $value, $key) => $carry .= ' ' . h($key) . '="' . h($value) . '"', 
-            ''
-        ) ?>
+        <?= $attributeString ?>
     >
         <div class="modal-overlay"></div>
         <div class="modal-container">
@@ -66,5 +66,3 @@ function render_modal(string $modalKey, string $title, string $lead = '', string
     
     <?php
 }
-?>
-

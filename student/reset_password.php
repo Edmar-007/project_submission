@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $confirm = $_POST['confirm_password'] ?? '';
     if (strlen($password) < 8 || $password !== $confirm) {
         set_flash('error', 'Password must be at least 8 characters and match confirmation.');
-        redirect(url('student/reset_password.php?token=' . urlencode($token)));
+        redirect_to('student/reset_password.php?token=' . urlencode($token));
     }
     pdo()->prepare('UPDATE students SET password_hash = ? WHERE id = ?')->execute([password_hash($password, PASSWORD_DEFAULT), $record['user_id']]);
     pdo()->prepare('UPDATE password_reset_tokens SET used_at = NOW() WHERE id = ?')->execute([$record['id']]);

@@ -100,5 +100,3 @@ function redirect_to(string $url, int $status = 302): void {
 }
 }
 
-?>
-
